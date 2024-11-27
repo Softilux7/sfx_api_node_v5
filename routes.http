@@ -1,0 +1,17 @@
+@baseUrl = http://localhost:3333
+# @authToken = {{authenticate.response.body.accessToken}}
+
+# @name get-company-technical
+GET http://localhost:3333/tecnicos/TECNICOAPP/1/empresas
+
+###
+
+# @name get-users
+GET http://localhost:3333/usuarios/1/names
+
+###
+
+# @name get-users
+GET http://localhost:3333/teste
+
+###

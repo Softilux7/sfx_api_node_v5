@@ -1,0 +1,1407 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model acos {
+  id          Int         @id @default(autoincrement())
+  parent_id   Int?
+  model       String?     @db.VarChar(255)
+  foreign_key Int?
+  alias       String?     @db.VarChar(255)
+  lft         Int?
+  rght        Int?
+  aros_acos   aros_acos[]
+
+  @@index([alias], map: "idx_acos_alias")
+  @@index([lft, rght], map: "idx_acos_lft_rght")
+  @@index([model, foreign_key], map: "idx_acos_model_foreign_key")
+}
+
+model api_auth {
+  id           Int      @id @default(autoincrement())
+  ID_BASE      Int?
+  empresa_id   String?  @db.VarChar(100)
+  cdcliente    String?  @db.VarChar(2000)
+  access_token String   @default("") @db.VarChar(100)
+  client_name  String   @default("") @db.VarChar(100)
+  client_code  String   @db.VarChar(100)
+  created_at   DateTime @default(now()) @db.Timestamp(0)
+  updated_at   DateTime @default(dbgenerated("'0000-00-00 00:00:00'")) @db.Timestamp(0)
+}
+
+model app_atendimento_photos {
+  id             Int       @id @default(autoincrement())
+  ID_BASE        Int?
+  id_empresa     Int?
+  id_atendimento Int?
+  type           Int?
+  status         Int?      @default(1)
+  create_at      DateTime? @default(now()) @db.Timestamp(0)
+  filename       String?   @db.VarChar(500)
+  path           String?   @db.VarChar(500)
+  description    String?   @db.LongText
+
+  @@index([ID_BASE, id_empresa], map: "Index_app")
+}
+
+model app_atendimento_timeline {
+  id                         Int       @id @unique(map: "id") @default(autoincrement())
+  id_transaction             Int       @default(0)
+  ID_BASE                    Int
+  empresa_id                 Int
+  chamado_id                 Int?
+  SEQOS                      Int?
+  id_atendimento             Int
+  id_tecnico                 String    @db.VarChar(20)
+  create_at                  DateTime  @default(now()) @db.Timestamp(0)
+  ATUALIZADO_APP             DateTime? @db.Timestamp(0)
+  andamento_chamado_snapshot String?   @db.VarChar(255)
+  tipo_time_line             String    @db.VarChar(255)
+  address                    String?   @db.VarChar(255)
+  latitute                   Float     @db.Float
+  longitute                  Float     @db.Float
+  distance                   Int?      @default(-1)
+  location_captured          Boolean?  @default(false)
+  country_name               String?   @db.VarChar(255)
+  locality                   String?   @db.VarChar(255)
+  motivo                     String?   @db.VarChar(255)
+  motivo_outros              String?   @db.Text
+  SINCRONIZADO_APP           Boolean?  @default(false)
+
+  @@index([ID_BASE, empresa_id, id_atendimento], map: "index_app")
+}
+
+model app_auth {
+  id                    Int       @id @default(autoincrement())
+  user_id               Int?
+  create_at             DateTime? @default(now()) @db.Timestamp(0)
+  update_at             DateTime? @db.Timestamp(0)
+  authorization_date    DateTime  @db.DateTime(0)
+  user_id_authorization Int
+  unique_id             String?   @db.VarChar(255)
+  android_version       Int?
+  actived               Int?      @default(0)
+  status                Int?      @default(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model app_envio_medidores {
+  id             Int       @id @default(autoincrement())
+  id_base        Int       @default(-1)
+  empresa_id     Int       @default(-1)
+  CDEQUIPAMANTO  Int       @default(0)
+  CDMEDIDOR      String    @default("") @db.VarChar(10)
+  MEDIDOR        Int?
+  INFORMENTE     String?   @db.VarChar(20)
+  created_at     DateTime  @default(now()) @db.Timestamp(0)
+  sincronizado   Int       @default(0)
+  DATA_LEITURA   DateTime  @default(dbgenerated("'0000-00-00'")) @db.Date
+  CDCLIENTE      Int       @default(0)
+  ATUALIZADO     Int?      @default(-1)
+  ATUALIZADO_WEB DateTime? @db.Timestamp(0)
+  ATUALIZADO_MSG String?   @db.Text
+}
+
+model aros {
+  id          Int         @id @default(autoincrement())
+  parent_id   Int?
+  model       String?     @db.VarChar(255)
+  foreign_key Int?
+  alias       String?     @db.VarChar(255)
+  lft         Int?
+  rght        Int?
+  aros_acos   aros_acos[]
+
+  @@index([alias], map: "idx_aros_alias")
+  @@index([lft, rght], map: "idx_aros_lft_rght")
+  @@index([model, foreign_key], map: "idx_aros_model_foreign_key")
+}
+
+model aros_acos {
+  id     Int    @id @default(autoincrement())
+  aro_id Int
+  aco_id Int
+  create String @default("0") @map("_create") @db.VarChar(2)
+  read   String @default("0") @map("_read") @db.VarChar(2)
+  update String @default("0") @map("_update") @db.VarChar(2)
+  delete String @default("0") @map("_delete") @db.VarChar(2)
+  aros   aros   @relation(fields: [aro_id], references: [id], onUpdate: Restrict, map: "aros_acos_ibfk_1")
+  acos   acos   @relation(fields: [aco_id], references: [id], onUpdate: Restrict, map: "aros_acos_ibfk_2")
+
+  @@unique([aro_id, aco_id], map: "ARO_ACO_KEY")
+  @@unique([aro_id, aco_id], map: "idx_aros_acos_aro_id_aco_id")
+  @@index([aco_id], map: "aco_id")
+}
+
+model atendimento_backup_offline {
+  id         Int      @id @default(autoincrement()) @db.UnsignedInt
+  id_offline Int
+  ID_BASE    Int
+  empresa_id Int
+  user_id    Int
+  data       String?  @db.LongText
+  created_at DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([ID_BASE, empresa_id, user_id, id_offline], map: "ID_BASE")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model atendimentos {
+  id                          Int       @id @default(autoincrement())
+  id_offline                  Int?
+  SEQOS                       Int       @default(-1)
+  ID_ATENDIMENTO              Int?      @default(-1)
+  ID_ATENDIMENTO_ORIGEM       Int?      @default(-1)
+  NMATENDENTE                 String?   @default("") @db.VarChar(10)
+  DATAHORA                    String?   @db.VarChar(20)
+  DTATENDIMENTO               DateTime? @db.Date
+  HRATENDIMENTO               DateTime? @db.Time(0)
+  TEMPOATENDIMENTO            Int?      @default(0)
+  OBSERVACAO                  String?   @default("") @db.VarChar(200)
+  KMINICIAL                   Float?    @default(0)
+  KMFINAL                     Float?    @default(0)
+  CDMEDIDOR                   String?   @default("") @db.VarChar(10)
+  MEDIDOR                     Float?    @default(0)
+  MEDIDORDESC                 Float?    @default(0)
+  DTMEDIDORDESC               DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  PLACAVEICULO                String?   @default("") @db.VarChar(15)
+  HRATENDIMENTOFIN            DateTime? @default(dbgenerated("'00:00:00'")) @db.Time(0)
+  TFVISITA                    String?   @default("S") @db.Char(1)
+  ATUALIZADO_WEB              DateTime? @default(now()) @db.Timestamp(0)
+  VALPEDAGIO                  Float?    @default(0)
+  VALESTACIONAMENTO           Float?    @default(0)
+  VALOUTRASDESP               Float?    @default(0)
+  TEMPOVIAGEM                 String?   @default("") @db.VarChar(5)
+  ATUALIZADO                  String?   @default("0") @db.Char(1)
+  CAUSA                       String?   @default("") @db.VarChar(100)
+  SINTOMA                     String?   @default("") @db.VarChar(100)
+  ACAO                        String?   @default("") @db.VarChar(100)
+  VALATENDIMENTO              Float?    @default(0)
+  VALKM                       Float?    @default(0)
+  HRVIAGEMINI                 String?   @default("00:00") @db.VarChar(8)
+  HRVIAGEMFIN                 String?   @default("00:00") @db.VarChar(8)
+  DTVIAGEMINI                 DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  DTVIAGEMFIN                 DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  OPCAOWEB                    String?   @default("0") @db.Char(1)
+  chamado_id                  Int?
+  empresa_id                  Int       @default(0)
+  ERR                         String?   @db.Text
+  ATUALIZADO_ILUX             String?   @default("") @db.VarChar(25)
+  ID_BASE                     Int?      @default(-1)
+  ATIVO_APP                   Boolean?
+  ASSINATURA_APP              String?   @db.VarChar(255)
+  ANDAMENTO_CHAMADO_APP       Int?
+  SINCRONIZADO_APP            Int?      @db.TinyInt
+  ORIGEM_CADASTRO             String?   @db.VarChar(255)
+  ATUALIZADO_APP              DateTime? @db.Timestamp(0)
+  NOME_CONTATO                String?   @db.VarChar(255)
+  WEB_ADD                     Int?
+  TFFATURAR                   String?   @default("N") @db.Char(1)
+  DESTINO_POS_ATENDIMENTO_APP Int?
+  granted_geolocation         Int?
+  DESLOCAMENTO_APP            Int?
+
+  @@index([empresa_id], map: "EMPRESA_ID")
+  @@index([ID_BASE, empresa_id, DTATENDIMENTO], map: "IDBASE_EMPRESAID_DTATENDIMENTO")
+  @@index([ID_BASE, empresa_id, ORIGEM_CADASTRO], map: "IDBASE_EMPRESAID_ORIGEMCADASTRO")
+  @@index([SEQOS], map: "SEQOS")
+  @@index([ID_BASE, empresa_id, chamado_id], map: "app")
+  @@index([ATUALIZADO, empresa_id], map: "atendimentos_ATUALIZADO_IDX")
+  @@index([ID_ATENDIMENTO, empresa_id], map: "atendimentos_ID_ATENDIMENTO_IDX")
+  @@index([empresa_id], map: "atendimentos_empresa_id_IDX")
+  @@index([ATIVO_APP, ID_BASE, empresa_id], map: "ativo_app__andamento")
+}
+
+model atendimentos_medidores {
+  id                    Int       @id @default(autoincrement())
+  empresa_id            Int
+  ID_BASE               Int
+  ATUALIZADO            Int?      @default(0)
+  ATUALIZADO_WEB        DateTime? @db.DateTime(0)
+  ERR                   String?   @db.Text
+  ID_ATEND_MED          Int?      @default(-1)
+  ID_ATEND_MED_ORIGEM   Int?      @default(-1)
+  ATUALIZADO_ILUX       String?   @db.VarChar(25)
+  CD_ATENDIMENTO        Int?      @default(-1)
+  CD_ATENDIMENTO_ORIGEM Int
+  CDEQUIPAMENTO         Int
+  CDMEDIDOR             String    @db.VarChar(10)
+  MEDIDOR               Int       @default(0)
+  INFORMANTE            String    @db.VarChar(20)
+  DT_LEITURA            DateTime  @db.Date
+  MEDIDOR_DESC          Int       @default(0)
+}
+
+model chamado_avaliacaos {
+  id_fk_chamado    Int       @id @db.UnsignedInt
+  score            Int?
+  descricao        String?   @db.LongText
+  id_resolvido     Int?
+  motivo_resolvido String?   @db.LongText
+  data_avaliacao   DateTime? @db.DateTime(0)
+}
+
+model chamado_itens_params {
+  id                      Int     @id @default(autoincrement()) @db.UnsignedInt
+  ID_BASE                 Int?
+  empresa_id              Int?
+  ATUALIZADO              Int?
+  ATUALIZADO_WEB          Int?
+  ATUALIZADO_ILUX         Int?
+  TFDEVOLUCAO             String? @db.Char(1)
+  TFPENDENTE              String? @db.Char(1)
+  ENVIOPARA               String? @db.Char(1)
+  CDCONDICAOPGTO          String? @db.VarChar(10)
+  DURABILIDADE            Int?
+  GARANTIADIAS            Int?
+  GARANTIAOBS             String? @db.VarChar(50)
+  GARANTIATP              String? @db.Char(1)
+  TFDESLOCAMENTO          String? @db.Char(1)
+  TFREFUGO                String? @db.Char(1)
+  TFCRITICA               String? @db.Char(1)
+  CDEMPRESA               Int?
+  CD_TABELA_PRECO_R       Int?
+  CD_TABELA_PRECO_V       Int?
+  CD_TABELA_PRECO_D       Int?
+  TF_TROCA_KIT_TECNICO    String? @db.Char(1)
+  TP_REPRESENTANTE        String? @db.Char(1)
+  ID_IXLOSIT_PARAM        Int?
+  ID_IXLOSIT_PARAM_ORIGEM Int?    @default(-1)
+}
+
+model chamado_tipos {
+  id                           Int       @id @default(autoincrement())
+  ID_BASE                      Int?      @default(-1)
+  empresa_id                   Int?      @default(0)
+  ID_TIPO_ORDEM_SERVICO        Int?      @default(-1)
+  ID_TIPO_ORDEM_SERVICO_ORIGEM Int?      @default(-1)
+  CDOSTP                       String    @default("") @db.VarChar(10)
+  NMOSTP                       String?   @default("") @db.VarChar(50)
+  ATUALIZADO_ILUX              String?   @default("") @db.VarChar(25)
+  FORMULARIO                   String?   @default("") @db.VarChar(10)
+  FORMULARIOOBS                String?   @default("") @db.VarChar(200)
+  TFUTILIZACONFIG              String?   @default("") @db.Char(1)
+  TFDIASUTEIS                  String?   @default("") @db.Char(1)
+  TEMPOATENDIMENTO             Int?      @default(0)
+  HORAINI1                     DateTime? @default(dbgenerated("'00:00:00'")) @db.Time(0)
+  HORAINI2                     DateTime? @default(dbgenerated("'00:00:00'")) @db.Time(0)
+  HORAFIN1                     DateTime? @default(dbgenerated("'00:00:00'")) @db.Time(0)
+  HORAFIN2                     DateTime? @default(dbgenerated("'00:00:00'")) @db.Time(0)
+  TFHORASUTEIS                 String?   @default("") @db.Char(1)
+  TFLIBERAR                    String?   @default("") @db.Char(1)
+  TPCHAMADO                    String?   @default("") @db.Char(1)
+  ATUALIZADO_WEB               DateTime? @default(now()) @db.Timestamp(0)
+  ERR                          String?   @db.Text
+  ATUALIZADO                   String?   @default("0") @db.Char(1)
+  TFINATIVO                    String?   @default("N") @db.Char(1)
+  TFRELINSP                    String?   @default("N") @db.Char(1)
+  TIPO_OS                      String?   @default("1") @db.Char(1)
+
+  @@index([ID_BASE, empresa_id, CDOSTP], map: "Index 2")
+}
+
+model chamados {
+  id                     Int       @id @unique(map: "id") @default(autoincrement())
+  ID_BASE                Int?      @default(-1)
+  empresa_id             Int?      @default(0)
+  STATUS                 String?   @db.Char(1)
+  SEQOSORIGEM            Int       @default(-1)
+  SEQOS                  Int       @default(-1)
+  ATUALIZADO_WEB         DateTime? @default(now()) @db.Timestamp(0)
+  ATUALIZADO             String?   @default("0") @db.Char(1)
+  DTINCLUSAO             DateTime? @db.Date
+  HRINCLUSAO             DateTime? @db.Time(0)
+  NMSUPORTEA             String?   @db.VarChar(10)
+  CDEMPRESA              Int?      @default(0)
+  CDCLIENTE              Int?      @default(0)
+  NMCLIENTE              String?   @default("") @db.VarChar(50)
+  CIDADE                 String?   @default("") @db.VarChar(40)
+  ENDERECO               String?   @default("") @db.VarChar(50)
+  COMPLEMENTO            String?   @default("") @db.VarChar(30)
+  BAIRRO                 String?   @default("") @db.VarChar(30)
+  UF                     String?   @default("") @db.Char(2)
+  CEP                    String?   @default("") @db.VarChar(8)
+  DDD                    String?   @default("") @db.VarChar(10)
+  FONE                   String?   @default("") @db.VarChar(15)
+  CELULAR                String?   @default("") @db.VarChar(15)
+  EMAIL                  String?   @default("") @db.VarChar(50)
+  CONTATO                String?   @default("") @db.VarChar(20)
+  CDEQUIPAMENTO          Int       @default(0)
+  CDOSTP                 String    @default("") @db.VarChar(10)
+  TPORCATEND             String?   @default("") @db.Char(1)
+  CDDEFEITO              String    @default("") @db.VarChar(10)
+  PRIORIDADE             String?   @default("") @db.VarChar(4)
+  DTPREVENTREGA          DateTime? @db.Date
+  NMSUPORTET             String?   @db.VarChar(10)
+  OBSDEFEITOCLI          String?   @db.LongText
+  OBSDEFEITOATS          String?   @db.LongText
+  DEPARTAMENTO           String?   @default("") @db.VarChar(30)
+  DTATENDIMENTO          DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  LOCALINSTAL            String?   @default("") @db.VarChar(50)
+  CDSTATUS               String?   @default("") @db.VarChar(10)
+  CDTERRITORIO           String?   @default("") @db.VarChar(10)
+  HRPREVENTREGA          String?   @default("") @db.VarChar(5)
+  SEQCONTRATO            Int?      @default(0)
+  EQUIPCLI               String?   @default("C") @db.Char(1)
+  STATUSEQUIP            String?   @default("0") @db.Char(1)
+  FORMULARIOOS           String?   @default("") @db.VarChar(150)
+  NUM                    Int?      @default(0)
+  TEMPORESPOSTA          String?   @default("") @db.VarChar(8)
+  TEMPOSOLUCAO           String?   @default("") @db.VarChar(8)
+  DTATENDIMENTO1         DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.Timestamp(0)
+  HRATENDIMENTO1         String?   @default("") @db.VarChar(8)
+  HRATENDIMENTO          String?   @default("") @db.VarChar(8)
+  TFLIBERADO             String?   @default("N") @db.Char(1)
+  TPCHAMADO              String?   @default("") @db.Char(1)
+  checklist              String?   @default("") @db.Char(1)
+  CDCLIENTEENT           Int?      @default(0)
+  ID_XPS                 String?   @default("") @db.VarChar(20)
+  TFVISITA               String?   @db.Char(1)
+  ATUALIZADO_ILUX        String?   @default("") @db.VarChar(25)
+  ERR                    String?   @db.Text
+  USUARIO_FECHAMENTO     String?   @db.VarChar(10)
+  DTFECHAMENTO           DateTime? @db.Timestamp(0)
+  TIPO_OS                String?   @db.Char(1)
+  status_andamento_app   Int?
+  ativo_app              Int?
+  ATUALIZADO_APP         DateTime? @db.DateTime(0)
+  attachments            String?   @db.LongText
+  data_envio_notificacao DateTime? @db.DateTime(0)
+
+  @@index([ID_BASE, empresa_id, NUM], map: "INDEX_IDBASE_EMPRESAID_NUM")
+  @@index([ID_BASE, CDDEFEITO], map: "INDEX_ID_BASE_CDDEFEITO")
+  @@index([ID_BASE, CDEQUIPAMENTO], map: "INDEX_ID_BASE_CDEQUIPAMENTO")
+  @@index([ID_BASE, empresa_id, ativo_app, status_andamento_app], map: "Index 6")
+  @@index([ID_BASE, CDCLIENTE], map: "chamados_ID_BASE_IDX")
+  @@index([ID_BASE, empresa_id, STATUS], map: "index_portal(ID_BASE_empresa_id_STATUS)")
+  @@index([ATUALIZADO, empresa_id], map: "index_sincronismo(ATUALIZADO_empresa_id)")
+  @@index([empresa_id, SEQOS], map: "index_sincronismo(empresa_id_SEQOS)")
+}
+
+model chamados_itens {
+  id                         Int       @id @default(autoincrement()) @db.UnsignedInt
+  ID_BASE                    Int?
+  empresa_id                 Int?
+  ATUALIZADO                 String?   @db.Char(1)
+  ERR                        String?   @db.Text
+  ATUALIZADO_WEB             DateTime? @db.Timestamp(0)
+  ATUALIZADO_ILUX            String?   @db.VarChar(25)
+  QUANTIDADE                 Float?    @db.Float
+  PRECOUNITARIO              Float?    @db.Float
+  SEQOS                      Int?
+  DATAHORA                   String?   @db.VarChar(20)
+  CDPRODUTO                  String?   @db.VarChar(20)
+  CDLOCESTOQUE               String?   @db.VarChar(10)
+  DTDEVOLUCAO                DateTime? @db.Timestamp(0)
+  CDMOVESTOQUE               Int?
+  CDPEDIDOV                  Int?
+  TFDEVOLUCAO                String?   @db.Char(1)
+  TFPENDENTE                 String?   @db.Char(1)
+  ENVIOPARA                  String?   @db.Char(1)
+  DATAHORAREF                String?   @db.VarChar(20)
+  CDCONDICAOPGTO             String?   @db.VarChar(10)
+  CDMEDIDOR                  String?   @db.VarChar(10)
+  MEDIDOR                    Int?
+  DURABILIDADE               Int?
+  GARANTIADIAS               Int?
+  GARANTIAOBS                String?   @db.VarChar(50)
+  GARANTIATP                 String?   @db.Char(1)
+  LANCAMENTOTP               String?   @db.Char(1)
+  TFDESLOCAMENTO             String?   @db.Char(1)
+  ITEM                       Int?
+  TFREFUGO                   String?   @db.Char(1)
+  CDCLIENTE                  Int?
+  DTINCLUSAO                 DateTime? @db.Timestamp(0)
+  TFCRITICA                  String?   @db.Char(1)
+  CDEMPRESA                  Int?
+  STATUS                     String?   @db.Char(2)
+  PERCDESCONTO               Float?
+  ETIQUETA                   String?   @db.VarChar(15)
+  CD_TABELA_PRECO            Int?
+  TF_TROCA_KIT_TECNICO       String?   @db.Char(1)
+  TP_REPRESENTANTE           String?   @db.Char(1)
+  ID_ORDEM_SERVICO_IT        Int?
+  ID_ORDEM_SERVICO_IT_ORIGEM Int?
+
+  @@index([empresa_id, ID_ORDEM_SERVICO_IT], map: "EMPRESA_ID_ORDER_SERVICO_IT")
+  @@index([ID_BASE, empresa_id, SEQOS, CDPRODUTO], map: "ID_BASE")
+  @@index([empresa_id, ATUALIZADO], map: "chamados_itens_empresa_id_IDX")
+}
+
+model checklist_perguntas {
+  id                           Int       @id @default(autoincrement())
+  empresa_id                   Int       @default(0)
+  ATUALIZADO                   String?   @default("0") @db.Char(1)
+  ATUALIZADO_ILUX              String?   @default("") @db.VarChar(25)
+  ID_CHECKLIST_PERGUNTA        Int?      @default(-1)
+  ID_CHECKLIST_PERGUNTA_ORIGEM Int?      @default(-1)
+  CDPERGUNTA                   Int       @default(-1)
+  DSPERGUNTA                   String?   @default("") @db.VarChar(254)
+  ATUALIZADO_WEB               DateTime? @default(now()) @db.Timestamp(0)
+  ID_BASE                      Int?      @default(-1)
+}
+
+model checklists {
+  id                  Int       @id @default(autoincrement())
+  ID_CHECKLIST        Int?      @default(-1)
+  ID_CHECKLIST_ORIGEM Int?      @default(-1)
+  SEQOS               Int       @default(-1)
+  CDPERGUNTA          Int       @default(-1)
+  DSRESPOSTA          String?   @default("") @db.VarChar(254)
+  NMSUPORTE           String?   @default("") @db.VarChar(10)
+  ATUALIZADO_ILUX     String?   @default("") @db.VarChar(25)
+  TFPERGUNTOU         String?   @default("") @db.Char(1)
+  ATUALIZADO_WEB      DateTime? @default(now()) @db.Timestamp(0)
+  ATUALIZADO          String?   @default("0") @db.Char(1)
+  empresa_id          Int?      @default(0)
+  ERR                 String?   @db.Text
+  ID_BASE             Int?      @default(-1)
+}
+
+model cidades {
+  id        Int     @id @default(autoincrement())
+  nome      String? @db.VarChar(120)
+  estado_id Int?
+  uf        String? @db.Char(2)
+
+  @@index([estado_id], map: "fk_Cidade_estado_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model clientes {
+  id              Int       @id @default(autoincrement())
+  ATUALIZADO      String?   @default("0") @db.Char(1)
+  empresa_id      Int       @default(0)
+  ID_CLIENTEIMP   Int?      @default(-1)
+  ERR             String?   @db.Text
+  CDCLIENTE       Int       @default(-1)
+  NMCLIENTE       String?   @default("") @db.VarChar(50)
+  FANTASIA        String?   @default("") @db.VarChar(30)
+  TFPESSFIS       String?   @default("") @db.Char(1)
+  CPF             String?   @default("") @db.VarChar(14)
+  CNPJ            String?   @default("") @db.VarChar(19)
+  INSCEST         String?   @default("") @db.VarChar(20)
+  INSCMUN         String?   @default("") @db.VarChar(20)
+  ENDERECO        String?   @default("") @db.VarChar(50)
+  NUM             Int?      @default(0)
+  COMPLEMENTO     String?   @default("") @db.VarChar(30)
+  BAIRRO          String?   @default("") @db.VarChar(30)
+  CIDADE          String?   @default("") @db.VarChar(40)
+  UF              String?   @default("") @db.VarChar(2)
+  CEP             String?   @default("") @db.VarChar(8)
+  DDD             String?   @default("") @db.VarChar(10)
+  FONE1           String?   @default("") @db.VarChar(15)
+  FONE2           String?   @default("") @db.VarChar(15)
+  CELULAR         String?   @default("") @db.VarChar(15)
+  FAX             String?   @default("") @db.VarChar(15)
+  EMAIL           String?   @default("") @db.VarChar(100)
+  CONTATO         String?   @default("") @db.VarChar(20)
+  STATUS          String?   @default("") @db.Char(1)
+  TFCREDBLOQ      String?   @db.Char(1)
+  ATUALIZADO_ILUX String?   @default("") @db.VarChar(25)
+  EMAILCOBRANCA   String?   @default("") @db.VarChar(100)
+  ID_BASE         Int?      @default(-1)
+  ATUALIZADO_WEB  DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([CDCLIENTE], map: "CDCLIENTE")
+  @@index([ID_BASE, CDCLIENTE], map: "Index 3")
+  @@index([empresa_id], map: "Index 4")
+  @@index([ID_BASE, empresa_id, CDCLIENTE], map: "Index 5")
+}
+
+model configuracoes_chamado {
+  id                             Int       @id @unique(map: "id") @default(autoincrement())
+  usuario_alteracao_id           Int?
+  update_at                      DateTime? @db.DateTime(0)
+  status_padrao_abertura_chamado String?   @db.Char(1)
+  cd_status_abertura_chamado     String?   @db.VarChar(10)
+  ID_BASE                        Int?
+}
+
+model contrato_itens {
+  id                       Int       @id @default(autoincrement())
+  empresa_id               Int       @default(0)
+  ATUALIZADO               String?   @default("0") @db.Char(1)
+  ATUALIZADO_WEB           DateTime? @default(now()) @db.Timestamp(0)
+  ID_CONTRATO_EQUIP        Int?      @default(-1)
+  ID_CONTRATO_EQUIP_ORIGEM Int?      @default(-1)
+  SEQCONTRATO              Int       @default(-1)
+  CDEQUIPAMENTO            Int       @default(-1)
+  TFALLINTONER             String?   @default("") @db.Char(1)
+  TFALLINCILINDRO          String?   @default("") @db.Char(1)
+  TFALLINREVELADOR         String?   @default("") @db.Char(1)
+  TFALLINPAPER             String?   @default("") @db.Char(1)
+  ATUALIZADO_ILUX          String?   @default("") @db.VarChar(25)
+  INCLUSAO                 String?   @default("") @db.VarChar(25)
+  DTRENOVACAO              DateTime? @db.Date
+  DTINSTALACAOINI          DateTime? @db.Timestamp(0)
+  DTINSTALACAOFIN          DateTime? @db.Timestamp(0)
+  DIALEITURA               Int?      @default(0)
+  ERR                      String?   @db.Text
+  ID_BASE                  Int?      @default(-1)
+
+  @@index([CDEQUIPAMENTO], map: "CDEQUIPAMENTO")
+  @@index([SEQCONTRATO], map: "SEQCONTRATO")
+  @@index([ID_CONTRATO_EQUIP, empresa_id], map: "contrato_itens_ID_CONTRATO_EQUIP_IDX")
+}
+
+model contrato_itens_med {
+  id                         Int      @id @default(autoincrement())
+  empresa_id                 Int
+  ID_BASE                    Int
+  ATUALIZADO                 Int
+  ATUALIZADO_WEB             DateTime @db.DateTime(0)
+  ERR                        String   @db.Text
+  ID_CONTRATO_MEDIDOR        Int
+  ID_CONTRATO_MEDIDOR_ORIGEM Int
+  ATUALIZADO_ILUX            String   @db.VarChar(25)
+  SEQCONTRATO                Int
+  CDEQUIPAMENTO              Int
+  CDMEDIDOR                  String   @db.VarChar(10)
+  TFMEDIDORATIVO             String?  @db.Char(1)
+}
+
+model contratos {
+  id                  Int       @id @default(autoincrement())
+  empresa_id          Int?      @default(0)
+  ATUALIZADO          String?   @default("0") @db.Char(1)
+  ATUALIZADO_WEB      DateTime? @default(now()) @db.Timestamp(0)
+  ID_CONTRATO         Int?      @default(-1)
+  ID_CONTRATO_ORIGEM  Int?
+  SEQCONTRATO         Int       @default(-1)
+  NRCONTRATO          String?   @default("") @db.VarChar(10)
+  CDCLIENTE           Int?      @default(0)
+  DTREAJUSTE          DateTime? @db.Date
+  INDICEREAJUSTE      String?   @default("") @db.VarChar(10)
+  PERCREAJUSTE        Float?    @default(0)
+  STATUS              String?   @default("") @db.Char(1)
+  ATUALIZADO_ILUX     String?   @default("") @db.VarChar(25)
+  INCLUSAO            String?   @default("") @db.VarChar(25)
+  DTREAJUSTEPREV      DateTime? @db.DateTime(0)
+  CDCONTRATOTP        String?   @default("") @db.VarChar(10)
+  TIPOCONTRATO        String?   @default("") @db.Char(1)
+  SEQCONTRATOGRP      Int       @default(-1)
+  DTCONTRATOINI       DateTime? @db.DateTime(0)
+  DTCONTRATOFIN       DateTime? @db.DateTime(0)
+  TFATENDIMENTO       String?   @default("") @db.Char(1)
+  DTATENDIMENTOINI    DateTime? @db.DateTime(0)
+  DTATENDIMENTOFIN    DateTime? @db.DateTime(0)
+  OBSERVACAO          String?   @db.Text
+  CDSTATUSCONT        String?   @default("") @db.VarChar(10)
+  PATHCONTRATO        String?   @default("") @db.VarChar(200)
+  TFREMESSA           String?   @default("") @db.Char(1)
+  TFEXPOBSDEMO        String?   @default("") @db.Char(1)
+  EMPENHO             String?   @default("") @db.VarChar(40)
+  TF_BLOQUEIA_OS      Int?      @default(0)
+  TF_BLOQUEIA_REMESSA Int?      @default(0)
+  PERIODO_REAJUSTE    Int?      @default(12)
+  ERR                 String?   @db.Text
+  ID_BASE             Int?      @default(-1)
+
+  @@index([SEQCONTRATO], map: "SEQCONTRATO")
+  @@index([ID_CONTRATO, empresa_id], map: "contratos_ID_CONTRATO_IDX")
+  @@index([STATUS], map: "contratos_STATUS_IDX")
+  @@index([empresa_id], map: "contratos_empresa_id_IDX")
+}
+
+model d_faturamentos {
+  id                   Int       @id @default(autoincrement()) @db.UnsignedInt
+  id_fk_cliente        Int?
+  mes                  Int?
+  ano                  Int?
+  seqcontrato          Int?      @default(0)
+  observacao           String?   @db.VarChar(255)
+  nome_arquivo         String?   @db.LongText
+  nome_arquivo_sistema String?   @db.LongText
+  data_upload          DateTime? @db.DateTime(0)
+  emails               String?   @db.Text
+  status               Int?      @default(1)
+}
+
+model defeitos {
+  id                     Int      @id @default(autoincrement())
+  ID_BASE                Int?     @default(-1)
+  empresa_id             Int      @default(0)
+  ATUALIZADO             String?  @default("0") @db.Char(1)
+  ID_TIPO_DEFEITO        Int?     @default(-1)
+  ID_TIPO_DEFEITO_ORIGEM Int?     @default(-1)
+  CDDEFEITO              String   @default("") @db.VarChar(10)
+  CD_SEVERIDADE          Int?     @default(0)
+  NMDEFEITO              String?  @default("") @db.VarChar(50)
+  CAUSA                  String?  @db.LongText
+  SOLUCAO                String?  @db.LongText
+  ATUALIZADO_WEB         DateTime @default(now()) @db.Timestamp(0)
+  ERR                    String?  @db.Text
+  ATUALIZADO_ILUX        String?  @db.VarChar(25)
+  TFINATIVO              String?  @default("N") @db.Char(1)
+  listar                 String?  @default("1") @db.Char(1)
+
+  @@index([ID_BASE, empresa_id, CDDEFEITO], map: "Index 2")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model defeitos_ordem {
+  ID_BASE    Int
+  empresa_id Int
+  CDDEFEITO  String @db.VarChar(10)
+
+  @@ignore
+}
+
+model empresas {
+  id               Int       @id @default(autoincrement())
+  empresa_nome     String?   @db.VarChar(60)
+  empresa_fantasia String?   @db.VarChar(50)
+  cnpj             String?   @db.VarChar(20)
+  ie               String?   @db.VarChar(15)
+  contato          String?   @db.VarChar(40)
+  email            String?   @db.VarChar(40)
+  ddd              Int?
+  fone             String?   @db.VarChar(10)
+  endereco         String?   @db.VarChar(40)
+  numero           Int?
+  complemento      String?   @db.VarChar(30)
+  bairro           String?   @db.VarChar(30)
+  uf               String?   @db.Char(2)
+  logo             String?   @db.VarChar(100)
+  cidade_id        String?   @db.VarChar(30)
+  cep              String?   @db.VarChar(10)
+  matriz_id        Int       @default(0)
+  ch               String?   @db.VarChar(20)
+  sync_key         String?   @default("") @db.VarChar(150)
+  fuso_horario     String?   @db.VarChar(50)
+  versao           Int?      @default(0)
+  data_validade    DateTime? @default(dbgenerated("'2050-01-01'")) @db.Date
+  ativo            Int       @default(1)
+  versao_ilux      String?   @db.VarChar(20)
+
+  @@index([ch], map: "Index 2")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model empresas2 {
+  id               Int     @default(0)
+  empresa_nome     String? @db.VarChar(60)
+  empresa_fantasia String? @db.VarChar(50)
+  cnpj             String? @db.VarChar(20)
+  ie               String? @db.VarChar(15)
+  contato          String? @db.VarChar(40)
+  email            String? @db.VarChar(40)
+  ddd              Int?
+  fone             String? @db.VarChar(10)
+  endereco         String? @db.VarChar(40)
+  numero           Int?
+  complemento      String? @db.VarChar(30)
+  bairro           String? @db.VarChar(30)
+  uf               String? @db.Char(2)
+  logo             String? @db.VarChar(100)
+  cidade_id        String? @db.VarChar(30)
+  cep              String? @db.VarChar(10)
+  matriz_id        Int     @default(0)
+  ch               String? @db.VarChar(20)
+  sync_key         String? @default("") @db.VarChar(150)
+  fuso_horario     String? @db.VarChar(50)
+  versao           Int?    @default(0)
+
+  @@ignore
+}
+
+model entregadores {
+  id                   Int       @id @default(autoincrement())
+  ID_ENTREGADOR        Int?      @default(-1)
+  NM_ENTREGADOR        String?   @default("") @db.VarChar(50)
+  CDTRANSPORT          Int?      @default(-1)
+  empresa_id           Int?      @default(0)
+  ID_ENTREGADOR_ORIGEM Int?      @default(-1)
+  ERR                  String?   @db.Text
+  ATUALIZADO_WEB       DateTime? @default(now()) @db.Timestamp(0)
+  ATUALIZADO_ILUX      String?   @default("") @db.VarChar(25)
+  ATUALIZADO           String?   @default("0") @db.Char(1)
+  ID_BASE              Int?      @default(-1)
+  CD_VEICULO           Int?      @default(-1)
+}
+
+model equipamento_medidores {
+  id                  Int       @id @default(autoincrement())
+  empresa_id          Int       @default(0)
+  CDEQUIPAMENTO       Int       @default(-1)
+  ID_EQUIP_MED        Int?      @default(-1)
+  ID_EQUIP_MED_ORIGEM Int?      @default(-1)
+  CDMEDIDOR           String    @default("") @db.VarChar(10)
+  MEDIDOR             Int?      @default(0)
+  MEDIDORULT          Int?      @default(0)
+  DTLEITURA           DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  DTLEITURAULT        DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  DTFATURA            DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  ATUALIZADO          String?   @default("0") @db.Char(1)
+  ATUALIZADO_WEB      DateTime  @default(now()) @db.Timestamp(0)
+  ATUALIZADO_ILUX     String?   @default("") @db.VarChar(25)
+  ERR                 String?   @db.Text
+  ID_BASE             Int?      @default(-1)
+
+  @@index([ID_BASE, empresa_id, CDEQUIPAMENTO], map: "Index 3")
+  @@index([empresa_id, CDEQUIPAMENTO], map: "empresa_id")
+  @@index([ID_BASE, CDEQUIPAMENTO], map: "equipamento_medidores_ID_BASE_IDX")
+  @@index([ID_EQUIP_MED, empresa_id], map: "equipamento_medidores_ID_EQUIP_MED_IDX")
+}
+
+model equipamento_medidores_it_g {
+  id                    Int       @id @default(autoincrement())
+  empresa_id            Int       @default(0)
+  ATUALIZADO            String?   @default("0") @db.Char(1)
+  ID_EQUIP_MED_G        Int?      @default(-1)
+  ID_EQUIP_MED_G_ORIGEM Int?      @default(-1)
+  CDEQUIPAMENTO         Int       @default(-1)
+  CDMEDIDOR             String    @default("") @db.VarChar(10)
+  DATAHORA              String    @default("") @db.VarChar(25)
+  DTLEITURA             DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  MEDIDOR               Int?      @default(0)
+  MEDIDORDESC           Int?      @default(0)
+  INFORMANTE            String?   @default("") @db.VarChar(20)
+  TPLEITURA             String?   @default("") @db.VarChar(20)
+  TPLEITURADESC         String?   @default("") @db.Char(1)
+  TFANALISE             String?   @default("") @db.Char(1)
+  ATUALIZADO_ILUX       String?   @default("") @db.VarChar(25)
+  TABELA                String?   @default("") @db.VarChar(20)
+  CHAVE01               String?   @default("") @db.VarChar(30)
+  CHAVE02               String?   @default("") @db.VarChar(30)
+  CHAVE03               String?   @default("") @db.VarChar(30)
+  ATUALIZADO_WEB        DateTime? @default(now()) @db.Timestamp(0)
+  ERR                   String?   @db.Text
+  ID_BASE               Int?      @default(-1)
+
+  @@index([empresa_id], map: "equipamento_medidores_it_g_empresa_id_IDX")
+  @@index([empresa_id, ID_EQUIP_MED_G], map: "equipamento_medidores_it_g_empresa_id_IDX2")
+}
+
+model equipamentos {
+  id                    Int       @id @default(autoincrement())
+  empresa_id            Int       @default(0)
+  ATUALIZADO_WEB        DateTime  @default(now()) @db.Timestamp(0)
+  ATUALIZADO            String?   @default("0") @db.Char(1)
+  CDEQUIPAMENTO         Int?      @default(-1)
+  ID_EQUIPAMENTO_ORIGEM Int?      @default(-1)
+  CDPRODUTO             String?   @default("") @db.VarChar(20)
+  SERIE                 String?   @default("") @db.VarChar(50)
+  MODELO                String?   @default("") @db.VarChar(15)
+  ATUALIZADO_ILUX       String?   @default("") @db.VarChar(25)
+  INCLUSAO              String?   @default("") @db.VarChar(25)
+  TFINATIVO             String?   @default("") @db.Char(1)
+  CIDADE                String?   @default("") @db.VarChar(40)
+  UF                    String?   @default("") @db.VarChar(2)
+  ENDERECO              String?   @default("") @db.VarChar(50)
+  BAIRRO                String?   @default("") @db.VarChar(30)
+  COMPLEMENTO           String?   @default("") @db.VarChar(30)
+  CONTATO               String?   @default("") @db.VarChar(20)
+  FONE                  String?   @default("") @db.VarChar(15)
+  DDD                   String?   @default("") @db.VarChar(10)
+  CEP                   String?   @default("") @db.VarChar(8)
+  EMAIL                 String?   @default("") @db.VarChar(100)
+  DEPARTAMENTO          String?   @default("") @db.VarChar(30)
+  MEDIDORLOCAL          String?   @default("") @db.VarChar(30)
+  FABRICANTE            String?   @default("") @db.VarChar(30)
+  CDEQUIPAMENTOTP       String?   @default("") @db.VarChar(10)
+  CDEMPRESA             Int?      @default(-1)
+  SEQCONTRATO           Int?
+  CDCLIENTE             Int?      @default(0)
+  LOCALINSTAL           String?   @default("") @db.VarChar(50)
+  CDTERRITORIO          String?   @default("") @db.VarChar(10)
+  TFDIASUTEIS           String?   @default("") @db.Char(1)
+  TEMPOATENDIMENTO      Int?      @default(0)
+  HORAINI1              String?   @default("") @db.VarChar(5)
+  HORAINI2              String?   @default("") @db.VarChar(5)
+  HORAFIN1              String?   @default("") @db.VarChar(5)
+  HORAFIN2              String?   @default("") @db.VarChar(5)
+  PROPRIETARIO          String?   @default("") @db.Char(1)
+  CDCLIENTEENT          Int?      @default(0)
+  TFBLOQUEIO            String?   @default("") @db.Char(1)
+  NFNUMERO              Int?      @default(0)
+  NFFORNECEDOR          String?   @default("") @db.VarChar(50)
+  NFFORNECCNPJ          String?   @default("") @db.VarChar(19)
+  NFDTEMISSAO           DateTime? @db.DateTime(0)
+  CDMEDIDOR             String?   @default("") @db.VarChar(10)
+  MEDIDOR               Int?      @default(0)
+  DTGARANTIAINI         DateTime? @db.Date
+  DTGARANTIAFIN         DateTime? @db.DateTime(0)
+  DURABILIDADE          Int?      @default(0)
+  GARANTIADIAS          Int?      @default(0)
+  GARANTIAOBS           String?   @default("") @db.VarChar(50)
+  GARANTIATP            String?   @default("") @db.Char(1)
+  COBRANCATP            String?   @default("") @db.Char(2)
+  VALPARCELA            Float?    @default(0)
+  COBRANCAOBS           String?   @default("") @db.VarChar(150)
+  NRPARCELA             Int?      @default(0)
+  TFPARCELACUSTO        String?   @default("") @db.Char(1)
+  TFENDERECOIMP         String?   @default("") @db.Char(1)
+  NUM                   Int?      @default(0)
+  TFHORASUTEIS          String?   @default("") @db.Char(1)
+  CDCONTRATOTP          String?   @default("") @db.VarChar(10)
+  DTCONTRATOINI         DateTime? @db.DateTime(0)
+  DTCONTRATOFIN         DateTime? @db.DateTime(0)
+  NRCONTRATO            String?   @default("") @db.VarChar(10)
+  VALCONTRATO           Float?    @default(0)
+  PATRIMONIO            String?   @default("") @db.VarChar(20)
+  FORMALEITURA          String?   @default("") @db.VarChar(30)
+  PENDENCIA             String?   @default("") @db.VarChar(100)
+  ERR                   String?   @db.Text
+  CD_SERIE              Int?      @default(0)
+  ID_BASE               Int?      @default(-1)
+  TEMPOFECHAMENTO       Int?      @default(0)
+  SQL_UPDATE            String?   @db.Char(10)
+
+  @@index([CDEQUIPAMENTO], map: "CDEQUIPAMENTO")
+  @@index([ID_BASE, empresa_id], map: "Index 4")
+  @@index([ID_BASE, empresa_id, CDPRODUTO], map: "Index 5")
+  @@index([empresa_id, CDCLIENTE, CDEQUIPAMENTO], map: "empresa_id")
+  @@index([ID_BASE, empresa_id, CDEQUIPAMENTO], map: "equipamentos_ID_BASE_IDX")
+}
+
+model estados {
+  id      Int     @id @default(autoincrement())
+  nome    String? @db.VarChar(75)
+  uf      String? @db.VarChar(5)
+  pais_id Int?
+
+  @@index([pais_id], map: "fk_Estado_pais_id")
+}
+
+model estoque_local {
+  ID                    Int       @id @default(autoincrement()) @db.UnsignedInt
+  ID_BASE               Int?
+  empresa_id            Int?
+  ATUALIZADO            String?   @db.Char(1)
+  ATUALIZADO_WEB        DateTime? @db.Timestamp(0)
+  ATUALIZADO_ILUX       String?   @default("") @db.VarChar(25)
+  CDLOCESTOQUE          String?   @db.VarChar(10)
+  NMLOCESTOQUE          String?   @db.VarChar(40)
+  CDTIPOLOCEST          String?   @db.VarChar(10)
+  TFLOCALINVENT         String?   @db.Char(1)
+  TFLOCALEXTERNO        String?   @db.Char(1)
+  CDFORNECEDOR          Int?
+  TFATIVO               String?   @db.Char(1)
+  TF_LOC_TECNICO        String?   @db.Char(1)
+  ID_LOC_ESTOQUE        Int?
+  ID_LOC_ESTOQUE_ORIGEM Int?
+
+  @@index([ID_BASE, CDLOCESTOQUE], map: "ID_BASE")
+}
+
+model estoque_local_tecnico {
+  ID                              Int       @id @default(autoincrement()) @db.UnsignedInt
+  ID_BASE                         Int?
+  empresa_id                      Int?
+  ATUALIZADO                      String?   @db.Char(1)
+  ATUALIZADO_WEB                  DateTime? @db.Timestamp(0)
+  ATUALIZADO_ILUX                 String?   @db.VarChar(25)
+  CDLOCESTOQUE                    String?   @db.VarChar(10)
+  CDEMPRESA                       Int?
+  NMTECNICO                       String?   @db.VarChar(10)
+  ID_LOC_ESTOQUE_X_TECNICO        Int?
+  ID_LOC_ESTOQUE_X_TECNICO_ORIGEM Int?
+
+  @@index([ID_BASE, empresa_id, ID_LOC_ESTOQUE_X_TECNICO], map: "ID_BASE")
+}
+
+model estoque_saldo {
+  ID                       Int       @id @default(autoincrement()) @db.UnsignedInt
+  ID_BASE                  Int?
+  empresa_id               Int?
+  ATUALIZADO               String?   @db.Char(1)
+  ATUALIZADO_WEB           DateTime? @db.Timestamp(0)
+  ATUALIZADO_ILUX          String?   @db.VarChar(25)
+  CDLOCESTOQUE             String?   @db.VarChar(10)
+  CDEMPRESA                Int?
+  CDPRODUTO                String?   @db.VarChar(20)
+  QT_SALDO_DISP            Float?    @db.Float
+  ID_PRODUTO_SALDOS        Int?
+  ID_PRODUTO_SALDOS_ORIGEM Int?
+
+  @@index([ID_BASE, empresa_id, CDPRODUTO, ID_PRODUTO_SALDOS], map: "ID_BASE")
+}
+
+model event_types {
+  id         Int    @id @default(autoincrement())
+  name       String @db.VarChar(20)
+  color      String @db.VarChar(255)
+  empresa_id Int?
+}
+
+model events {
+  id            Int       @id @default(autoincrement())
+  event_type_id Int
+  cliente_id    Int?
+  versao_id     Int?
+  title         String    @db.VarChar(255)
+  details       String    @db.Text
+  start         DateTime  @db.DateTime(0)
+  end           DateTime  @db.DateTime(0)
+  all_day       Boolean   @default(true)
+  status        String    @default("Scheduled") @db.VarChar(20)
+  active        Boolean   @default(true)
+  created       DateTime? @db.Date
+  modified      DateTime? @db.Date
+  empresa_id    Int?
+}
+
+model ficha_tecnica_it {
+  id                       Int       @id @default(autoincrement())
+  CDFICHATECPROD           String    @default("") @db.VarChar(15)
+  CDPRODUTO                String    @default("") @db.VarChar(20)
+  CDUNIDADE                String?   @default("") @db.VarChar(6)
+  QUANTIDADE               Float?    @default(0)
+  XCBUSCACORPED            String?   @default("") @db.Char(1)
+  ATUALIZADO_WEB           DateTime? @db.Timestamp(0)
+  empresa_id               Int?      @default(0)
+  ID_FICHA_TEC_ITEM        Int?      @default(-1)
+  ID_FICHA_TEC_ITEM_ORIGEM Int?      @default(-1)
+  ERR                      String?   @db.Text
+  ATUALIZADO_ILUX          String?   @default("") @db.VarChar(25)
+  ATUALIZADO               String?   @default("0") @db.Char(1)
+  ID_BASE                  Int?      @default(-1)
+}
+
+model groups {
+  id         Int       @id @default(autoincrement())
+  name       String    @db.VarChar(100)
+  created    DateTime? @db.DateTime(0)
+  modified   DateTime? @db.DateTime(0)
+  empresa_id Int?
+}
+
+model grupo_contratos {
+  id                     Int       @id @default(autoincrement())
+  ID_CONTRATO_GRP        Int?      @default(-1)
+  ID_CONTRATO_GRP_ORIGEM Int?      @default(-1)
+  SEQCONTRATOGRP         Int       @default(-1)
+  CDCLIENTE              Int?      @default(-1)
+  CDEMPRESA              Int?      @default(-1)
+  TIPO                   String?   @default("") @db.Char(11)
+  empresa_id             Int?      @default(0)
+  ATUALIZADO_ILUX        String?   @default("") @db.VarChar(25)
+  ATUALIZADO_WEB         DateTime? @default(now()) @db.Timestamp(0)
+  ATUALIZADO             String?   @default("0") @db.Char(1)
+  ERR                    String?   @db.Text
+  ID_BASE                Int?      @default(-1)
+
+  @@index([SEQCONTRATOGRP], map: "SEQCONTRATOGRP")
+  @@index([empresa_id, ID_BASE], map: "grupo_contratos_empresa_id_IDX")
+}
+
+model log_status_atendimento {
+  id             Int      @id @default(autoincrement())
+  id_base        Int
+  chamado_id     Int
+  status         String   @db.VarChar(10)
+  cd_status      String   @db.VarChar(10)
+  data           DateTime @db.DateTime(0)
+  atualizado_app DateTime @db.DateTime(0)
+
+  @@index([id_base, chamado_id], map: "indice_id_base_chamado_id")
+}
+
+model logs {
+  id               Int       @id @default(autoincrement())
+  empresa_fantasia String?   @db.VarChar(50)
+  empresa_id       Int?
+  id_base          Int?
+  tabela           String?   @db.VarChar(40)
+  data             DateTime? @db.DateTime(0)
+  evt              String?   @db.Char(4)
+  log              String?   @db.Text
+}
+
+model medidores {
+  id                Int       @id @default(autoincrement())
+  empresa_id        Int
+  ATUALIZADO        String?   @default("0") @db.Char(1)
+  ID_MEDIDOR        Int?      @default(-1)
+  ID_MEDIDOR_ORIGEM Int?      @default(-1)
+  CDMEDIDOR         String    @default("") @db.VarChar(10)
+  CDMEDIDORIMP      String?   @default("") @db.VarChar(10)
+  NMMEDIDOR         String?   @default("") @db.VarChar(50)
+  ATUALIZADO_ILUX   String?   @default("") @db.VarChar(25)
+  ATUALIZADO_WEB    DateTime? @default(now()) @db.Timestamp(0)
+  ERR               String?   @db.Text
+  ID_BASE           Int?      @default(-1)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model mensagens_pre_atendimento {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  chamadoId  Int
+  message    String   @db.LongText
+  file       String?  @db.VarChar(100)
+  idBase     Int
+  empresaId  Int
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  dateTime   String   @db.VarChar(100)
+  userId2    Int
+
+  @@index([idBase, chamadoId], map: "idBase")
+}
+
+model nfes {
+  id               Int       @id @default(autoincrement())
+  SEQINCNFS        Int?      @default(-1)
+  SEQINCNFS_ORIGEM Int?      @default(-1)
+  empresa_id       Int?      @default(0)
+  NRNFSAIDA        String?   @default("") @db.VarChar(20)
+  CDCLIENTE        Int?      @default(-1)
+  NMCLIENTE        String?   @default("") @db.VarChar(50)
+  DTEMISSAONFS     DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  CHAVEACESSO_NFEL String?   @default("") @db.VarChar(50)
+  ATUALIZADO_ILUX  String?   @default("") @db.VarChar(25)
+  SITUACAO_NFEL    String?   @default("") @db.VarChar(20)
+  ATUALIZADO_WEB   DateTime? @default(now()) @db.Timestamp(0)
+  ERR              String?   @db.Text
+  ATUALIZADO       String?   @default("0") @db.Char(1)
+  ID_BASE          Int?      @default(-1)
+
+  @@index([SEQINCNFS, empresa_id], map: "nfes_SEQINCNFS_IDX")
+  @@index([empresa_id], map: "nfes_empresa_id_IDX")
+}
+
+model nfsaida_entregas {
+  id                Int       @id @default(autoincrement())
+  ID_ENTREGA        Int?      @default(-1)
+  ID_ENTREGA_ORIGEM Int?      @default(-1)
+  SITUACAO_ENTREGA  String?   @default("") @db.Char(1)
+  ID_ENTREGADOR     Int?      @default(-1)
+  NM_RECEBEDOR      String?   @default("") @db.VarChar(50)
+  NR_OBJETO         String?   @default("") @db.VarChar(25)
+  DATAHORA          DateTime? @default(dbgenerated("'0000-00-00 00:00:00'")) @db.DateTime(0)
+  SEQINCNFS         Int?      @default(-1)
+  empresa_id        Int       @default(0)
+  ATUALIZADO_WEB    DateTime? @default(now()) @db.Timestamp(0)
+  ERR               String?   @db.Text
+  ATUALIZADO        String?   @default("0") @db.Char(1)
+  ATUALIZADO_ILUX   String?   @default("") @db.VarChar(25)
+  ID_BASE           Int?      @default(-1)
+  VL_POSTAGEM       Float?    @default(0)
+
+  @@index([ATUALIZADO, empresa_id], map: "nfsaida_entregas_ATUALIZADO_IDX")
+  @@index([ID_ENTREGA, empresa_id], map: "nfsaida_entregas_ID_ENTREGA_IDX")
+  @@index([empresa_id], map: "nfsaida_entregas_empresa_id_IDX")
+  @@index([ID_BASE, empresa_id], map: "portal")
+  @@index([ID_BASE, empresa_id, SITUACAO_ENTREGA, ID_ENTREGADOR], map: "portal_index")
+}
+
+model notification_groups {
+  id              Int    @id @default(autoincrement())
+  id_base         Int
+  empresa_id      Int
+  id_perfil       Int
+  fcm_token_group String @db.VarChar(255)
+  fcm_name_group  String @db.VarChar(255)
+
+  @@index([id_base, empresa_id, id_perfil], map: "notification_groups_id_base_IDX")
+}
+
+model notification_log {
+  id               Int     @id @default(autoincrement())
+  user_id          Int
+  empresa_id       Int
+  verificado_app   Int?
+  titulo           String  @db.VarChar(50)
+  conteudo         String  @db.Text
+  fcm_name_group   String? @db.VarChar(15)
+  fcm_token_device String? @db.VarChar(256)
+  mensagem_log     String? @db.VarChar(200)
+  enviado          Int
+}
+
+model notification_queue_chamados {
+  id         Int       @id @default(autoincrement())
+  created_at DateTime? @db.DateTime(0)
+  chamado_id Int
+  data_envio DateTime? @db.DateTime(0)
+}
+
+model oportunidades {
+  id                     Int       @id @default(autoincrement())
+  NMCLIENTE              String?   @default("") @db.VarChar(50)
+  NMSUPORTE              String?   @default("") @db.VarChar(10)
+  DTINDICACAO            DateTime? @default(dbgenerated("'0000-00-00'")) @db.Date
+  CONTATO                String?   @default("") @db.VarChar(20)
+  TELEFONE               String?   @default("") @db.VarChar(20)
+  DSOPORTUNIDADE         String?   @db.Text
+  OBS                    String?   @db.Text
+  ID_OPORTUNIDADE        Int?      @default(-1)
+  ID_OPORTUNIDADE_ORIGEM Int?      @default(-1)
+  ATUALIZADO_WEB         DateTime? @default(now()) @db.Timestamp(0)
+  ERR                    String?   @db.Text
+  empresa_id             Int?      @default(0)
+  ATUALIZADO             String?   @default("0") @db.Char(1)
+  ATUALIZADO_ILUX        String?   @default("") @db.VarChar(25)
+  ID_BASE                Int?      @default(-1)
+
+  @@index([empresa_id], map: "Index 2")
+}
+
+model produtos {
+  id                Int      @id @default(autoincrement())
+  ID_PRODUTO        Int?     @default(-1)
+  ID_PRODUTO_ORIGEM Int?     @default(-1)
+  ATUALIZADO        String?  @default("0") @db.Char(1)
+  ATUALIZADO_ILUX   String?  @default("") @db.VarChar(25)
+  CDPRODUTO         String   @default("") @db.VarChar(20)
+  NMPRODUTO         String?  @default("") @db.VarChar(50)
+  CDPERFILPROD      String?  @default("") @db.Char(2)
+  CDFAMILIAPROD     String?  @default("") @db.VarChar(10)
+  DURABILIDADE      String?  @default("") @db.VarChar(30)
+  ATUALIZADO_WEB    DateTime @default(now()) @db.Timestamp(0)
+  CDFICHATECPROD    String?  @default("") @db.VarChar(15)
+  empresa_id        Int?
+  ERR               String?  @db.Text
+  TFINATIVOPROD     String?  @db.Char(1)
+  ID_BASE           Int?     @default(-1)
+  TPPRODUTO         String?  @db.Char(1)
+  UNIDMEDIDA        String?  @db.VarChar(30)
+
+  @@index([CDPRODUTO], map: "CDPRODUTO")
+  @@index([ID_BASE, CDPRODUTO], map: "ID_BASE")
+  @@index([empresa_id, ID_PRODUTO], map: "sync")
+}
+
+model settings {
+  setting_key   String    @id @default("") @db.VarChar(255)
+  setting_value String?   @db.LongText
+  created       DateTime? @db.DateTime(0)
+  modified      DateTime? @db.DateTime(0)
+}
+
+model solicitacao_pecas {
+  id                 Int      @id @default(autoincrement()) @db.UnsignedInt
+  ID_BASE            Int      @default(-1)
+  empresa_id         Int      @default(-1)
+  cdcliente          Int      @default(-1)
+  dt_inclusao        DateTime @db.DateTime(0)
+  cdlocestoque       String   @default("") @db.VarChar(10)
+  cdequipamento      Int      @default(-1)
+  cdproduto          String   @default("") @db.VarChar(20)
+  quantidade         Float    @default(-1) @db.Float
+  undmedida          String   @default("") @db.VarChar(30)
+  cdmedidor          String   @default("") @db.VarChar(10)
+  medidor            Int      @default(-1)
+  peca_critica       Int      @default(-1)
+  condicao_pagamento String   @default("") @db.VarChar(20)
+}
+
+model solicitacao_suprimentos {
+  id                 Int  @id @default(autoincrement())
+  solicitacao_id     Int?
+  suprimento_tipo_id Int?
+  quantidade         Int?
+  contador           Int?
+  empresa_id         Int?
+  ID_BASE            Int? @default(-1)
+
+  @@index([solicitacao_id], map: "Index 2")
+}
+
+model solicitacoes {
+  id              Int       @id @default(autoincrement())
+  cliente_id      Int?
+  equipamento_id  Int?
+  contato         String?   @db.VarChar(30)
+  email           String?   @db.VarChar(150)
+  fone            String?   @db.VarChar(20)
+  status          String?   @db.Char(1)
+  situacao        String?   @db.Char(1)
+  obs             String?   @db.Text
+  OBSADMINREVENDA String?   @db.Text
+  transportadora  String?   @db.VarChar(50)
+  cdrastreio      String?   @db.VarChar(150)
+  NRNFSAIDA       Int?
+  DTEMISSAONFS    DateTime? @db.Date
+  created         DateTime? @db.DateTime(0)
+  modified        DateTime? @db.DateTime(0)
+  empresa_id      Int?
+  ID_BASE         Int?      @default(-1)
+  modelo          String?   @db.VarChar(30)
+  departamento    String?   @db.VarChar(40)
+  cidade          String?   @db.VarChar(40)
+  contrato_id     Int?
+  localinstal     String?   @db.VarChar(50)
+  historico       Int       @default(0)
+
+  @@index([ID_BASE, empresa_id], map: "solicitacoes_ID_BASE_IDX")
+}
+
+model status {
+  id                             Int      @id @default(autoincrement())
+  ATUALIZADO                     String?  @default("0") @db.Char(1)
+  ID_STATUS_ORDEM_SERVICO        Int?     @default(-1)
+  ID_STATUS_ORDEM_SERVICO_ORIGEM Int?     @default(-1)
+  ATUALIZADO_ILUX                String?  @default("") @db.VarChar(25)
+  CDSTATUS                       String   @default("") @db.VarChar(10)
+  NMSTATUS                       String?  @default("") @db.VarChar(50)
+  TIPO                           String?  @default("") @db.Char(1)
+  ATUALIZADO_WEB                 DateTime @default(now()) @db.Timestamp(0)
+  empresa_id                     Int?     @default(0)
+  TFINATIVO                      String?  @default("N") @db.Char(1)
+  ID_BASE                        Int?     @default(-1)
+
+  @@index([ID_BASE, TFINATIVO, TIPO], map: "ID_BASE")
+  @@index([empresa_id], map: "Index 3")
+}
+
+model suprimento_tipos {
+  id         Int     @id @default(autoincrement())
+  nome_tipo  String? @db.VarChar(40)
+  servico    Int?    @default(0)
+  empresa_id Int?
+  ID_BASE    Int?    @default(-1)
+}
+
+model tecnico_territorios {
+  id                           Int      @id @default(autoincrement())
+  ID_SUPORTE_TERRITORIO        Int?     @default(-1)
+  ID_SUPORTE_TERRITORIO_ORIGEM Int?     @default(-1)
+  CDTERRITORIO                 String   @default("") @db.VarChar(10)
+  NMSUPORTE                    String   @default("") @db.VarChar(10)
+  TFPADRAO                     String?  @default("") @db.Char(1)
+  ATUALIZADO_WEB               DateTime @default(now()) @db.Timestamp(0)
+  empresa_id                   Int?     @default(0)
+  ATUALIZADO_ILUX              String?  @default("") @db.VarChar(25)
+  ERR                          String?  @db.Text
+  ATUALIZADO                   String?  @default("0") @db.Char(1)
+  ID_BASE                      Int?     @default(-1)
+
+  @@index([ID_BASE, empresa_id], map: "Index 2")
+}
+
+model tecnicos {
+  id                  Int      @id @default(autoincrement())
+  ATUALIZADO          String?  @default("0") @db.Char(1)
+  ATUALIZADO_ILUX     String?  @default("") @db.VarChar(25)
+  ID_SUPORTE          Int?     @default(-1)
+  ID_SUPORTE_ORIGEM   Int?     @default(-1)
+  NMSUPORTE           String   @default("") @db.VarChar(10)
+  TIPO                String?  @default("") @db.Char(1)
+  EMAIL               String?  @default("") @db.VarChar(50)
+  DDD                 String?  @default("") @db.VarChar(10)
+  FONE                String?  @default("") @db.VarChar(15)
+  CELULAR             String?  @default("") @db.VarChar(15)
+  TFAUSENTE           String?  @default("") @db.Char(1)
+  NRNEXTEL            String?  @default("") @db.VarChar(100)
+  ATUALIZADO_WEB      DateTime @default(now()) @db.Timestamp(0)
+  VALHRATENDIMENTO    Float?   @default(0)
+  VALKMATENDIMENTO    Float?   @default(0)
+  TFCOBRARHRCHEIA     String?  @default("") @db.Char(1)
+  TFCOBRARTEMPOVIAGEM String?  @default("") @db.Char(1)
+  empresa_id          Int?     @default(0)
+  ERR                 String?  @db.Text
+  TFATIVO             String?  @default("S") @db.Char(1)
+  ID_BASE             Int?     @default(-1)
+  IMEI                String?  @default("") @db.VarChar(30)
+  NMCOMPLETO          String?  @default("") @db.VarChar(50)
+  CDFORNECEDOR        Int?
+
+  @@index([empresa_id], map: "Index 3")
+  @@index([ID_BASE], map: "Index 4")
+  @@index([id], map: "id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tpemails {
+  id         Int     @id @default(autoincrement())
+  empresa_id Int?
+  ID_BASE    Int?    @default(-1)
+  tipo       String? @db.VarChar(255)
+  cd_tipo    String? @db.VarChar(10)
+  id_parent  Int?
+  order      String? @default("-1") @db.VarChar(3)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model users {
+  id                      Int       @id @unique(map: "id") @default(autoincrement())
+  empresa_id              Int?
+  cliente_id              Int?
+  user_email              String?   @db.VarChar(255)
+  user_password           String?   @db.Char(100)
+  change_password         Int       @default(1)
+  user_name               String?   @db.VarChar(255)
+  user_code               String?   @db.VarChar(255)
+  user_status             Int?      @default(0) @db.TinyInt
+  created                 DateTime? @db.DateTime(0)
+  modified                DateTime? @db.DateTime(0)
+  filial_id               Int?
+  filial                  Boolean   @default(false)
+  tecnico_id              String?   @db.VarChar(20)
+  entregador_id           Int?
+  app_version             String?   @db.VarChar(50)
+  app_version_api         String?   @db.VarChar(50)
+  android_version         Int?
+  fcm_token_device        String?   @db.VarChar(255)
+  token                   String    @default("") @db.VarChar(256)
+  dashboard_monitoramento Int       @default(0)
+  token_2                 String?   @db.VarChar(256)
+  validate_token_2        DateTime? @db.DateTime(0)
+
+  @@index([empresa_id], map: "id_empresa")
+}
+
+model users_clientes {
+  user_id    Int
+  cliente_id Int
+
+  @@id([user_id, cliente_id])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model users_clientes2 {
+  user_id    Int
+  cliente_id Int
+
+  @@ignore
+}
+
+model users_empresas {
+  user_id    Int
+  empresa_id Int
+
+  @@id([user_id, empresa_id])
+}
+
+model users_groups {
+  user_id  Int
+  group_id Int
+
+  @@id([user_id, group_id])
+  @@index([user_id, group_id], map: "user_id_group_id")
+}
+
+model users_lgpd {
+  id                   Int       @id @default(autoincrement())
+  user_id              Int
+  politica_privacidade DateTime? @db.DateTime(0)
+  termo_uso            DateTime? @db.DateTime(0)
+  termo_consentimento  DateTime? @db.DateTime(0)
+  email                String?   @db.Text
+  motivo               String?   @db.LongText
+  negado               Int?
+
+  @@index([negado, id], map: "users_lgpd_negado_IDX")
+}
+
+model users_tpemails {
+  user_id    Int
+  tpemail_id Int
+
+  @@id([user_id, tpemail_id])
+  @@index([user_id], map: "user_id")
+}
+
+model versao {
+  id     Int       @id @default(autoincrement())
+  versao String    @db.VarChar(15)
+  data   DateTime? @db.DateTime(0)
+}
