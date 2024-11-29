@@ -5,7 +5,6 @@ import { prisma } from '../lib/prisma'
 import { BadRequest } from './_errors/bad-request'
 
 export async function getCompanyTechnical(app: FastifyInstance) {
-  // console.log("TESTE")
   app
   .withTypeProvider<ZodTypeProvider>()
   .get('/tecnicos/:tecnicoId/:idBase/empresas',
