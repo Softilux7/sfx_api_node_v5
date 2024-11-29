@@ -1,6 +1,9 @@
 @baseUrl = http://localhost:3333
 # @authToken = {{authenticate.response.body.accessToken}}
 
+
+### CHAMADOS ###
+
 # @name get-company-technical
 GET http://localhost:3333/tecnicos/TECNICOAPP/1/empresas
 
@@ -11,8 +14,28 @@ GET http://localhost:3333/usuarios/1/names
 
 ###
 
-# @name get-users
-GET http://localhost:3333/teste
+# @name get-linked-parts
+GET http://localhost:3333/pecas/1/1430
+
+###
+
+# @name get-companies
+GET http://localhost:3333/empresas/1
+
+###
+
+# @name get-clients
+GET http://localhost:3333/clientes/1
+
+###
+
+# @name get-status
+GET http://localhost:3333/status/:id/:idEmpresa/:idBase
+
+###
+
+# @name get-resumo-chamados
+GET http://localhost:3333/tecnicos/TECNICOAPP/1/resumo-chamados
 
 ###
 
