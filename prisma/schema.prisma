@@ -427,6 +427,7 @@ model chamados_itens {
   TP_REPRESENTANTE           String?   @db.Char(1)
   ID_ORDEM_SERVICO_IT        Int?
   ID_ORDEM_SERVICO_IT_ORIGEM Int?
+  produtos                   produtos? @relation(fields: [CDPRODUTO], references: [CDPRODUTO])
 
   @@index([empresa_id, ID_ORDEM_SERVICO_IT], map: "EMPRESA_ID_ORDER_SERVICO_IT")
   @@index([ID_BASE, empresa_id, SEQOS, CDPRODUTO], map: "ID_BASE")
@@ -1145,24 +1146,25 @@ model oportunidades {
 }
 
 model produtos {
-  id                Int      @id @default(autoincrement())
-  ID_PRODUTO        Int?     @default(-1)
-  ID_PRODUTO_ORIGEM Int?     @default(-1)
-  ATUALIZADO        String?  @default("0") @db.Char(1)
-  ATUALIZADO_ILUX   String?  @default("") @db.VarChar(25)
-  CDPRODUTO         String   @default("") @db.VarChar(20)
-  NMPRODUTO         String?  @default("") @db.VarChar(50)
-  CDPERFILPROD      String?  @default("") @db.Char(2)
-  CDFAMILIAPROD     String?  @default("") @db.VarChar(10)
-  DURABILIDADE      String?  @default("") @db.VarChar(30)
-  ATUALIZADO_WEB    DateTime @default(now()) @db.Timestamp(0)
-  CDFICHATECPROD    String?  @default("") @db.VarChar(15)
+  id                Int              @id @default(autoincrement())
+  ID_PRODUTO        Int?             @default(-1)
+  ID_PRODUTO_ORIGEM Int?             @default(-1)
+  ATUALIZADO        String?          @default("0") @db.Char(1)
+  ATUALIZADO_ILUX   String?          @default("") @db.VarChar(25)
+  CDPRODUTO         String           @unique @default("") @db.VarChar(20)
+  NMPRODUTO         String?          @default("") @db.VarChar(50)
+  CDPERFILPROD      String?          @default("") @db.Char(2)
+  CDFAMILIAPROD     String?          @default("") @db.VarChar(10)
+  DURABILIDADE      String?          @default("") @db.VarChar(30)
+  ATUALIZADO_WEB    DateTime         @default(now()) @db.Timestamp(0)
+  CDFICHATECPROD    String?          @default("") @db.VarChar(15)
   empresa_id        Int?
-  ERR               String?  @db.Text
-  TFINATIVOPROD     String?  @db.Char(1)
-  ID_BASE           Int?     @default(-1)
-  TPPRODUTO         String?  @db.Char(1)
-  UNIDMEDIDA        String?  @db.VarChar(30)
+  ERR               String?          @db.Text
+  TFINATIVOPROD     String?          @db.Char(1)
+  ID_BASE           Int?             @default(-1)
+  TPPRODUTO         String?          @db.Char(1)
+  UNIDMEDIDA        String?          @db.VarChar(30)
+  chamados_itens    chamados_itens[]
 
   @@index([CDPRODUTO], map: "CDPRODUTO")
   @@index([ID_BASE, CDPRODUTO], map: "ID_BASE")
