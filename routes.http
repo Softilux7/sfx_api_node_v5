@@ -15,3 +15,16 @@ GET http://localhost:3333/usuarios/1/names
 GET http://localhost:3333/teste
 
 ###
+
+# @name get-all-medidores-by-contrato
+GET http://localhost:3333/tecnicos/1/12/22/todos-medidores-contrato
+
+###
+
+# @name get-amount-chamados
+GET http://localhost:3333/tecnicos/TECNICOAPP/1/quantidade-chamados
+
+###
+
+# @name get-amount-chamados
+GET http://localhost:3333/tecnicos/1/4/lista-tipo-medidor-contrato
