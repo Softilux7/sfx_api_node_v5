@@ -36,3 +36,18 @@ GET http://localhost:3333/status/:id/:idEmpresa/:idBase
 
 # @name get-resumo-chamados
 GET http://localhost:3333/tecnicos/TECNICOAPP/1/resumo-chamados
+
+###
+
+# @name get-all-medidores-by-contrato
+GET http://localhost:3333/tecnicos/1/12/22/todos-medidores-contrato
+
+###
+
+# @name get-amount-chamados
+GET http://localhost:3333/tecnicos/TECNICOAPP/1/quantidade-chamados
+
+###
+
+# @name get-amount-chamados
+GET http://localhost:3333/tecnicos/1/4/lista-tipo-medidor-contrato
