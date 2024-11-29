@@ -6,11 +6,17 @@ import {
 import fastifyCors from '@fastify/cors'
 import { errorHandler } from './error-handler'
 import { getCompanyTechnical } from './routes/get-companies-technical'
+import { getAllContractCounters } from './routes/get-all-contract-counters'
+import { getAmountServiceOrder } from './routes/get-amount-service-order'
+import { listTypeContractCounters } from './routes/get-type-contract-counters'
 
 // Instância Fastify
 const app = fastify()
 
 app.register(getCompanyTechnical)
+app.register(getAllContractCounters)
+app.register(getAmountServiceOrder)
+app.register(listTypeContractCounters)
 
 // CORS
 app.register(fastifyCors, {
