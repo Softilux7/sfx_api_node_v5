@@ -1,10 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { prisma } from '../lib/prisma';
-import { BadRequest } from './_errors/bad-request';
+import { getLinkedParts } from '../services/get-linked-parts-service';
 
-export async function getLinkedParts(app: FastifyInstance) {
+export async function getLinkedPart(app: FastifyInstance) {
   app
     .withTypeProvider<ZodTypeProvider>()
     .get('/pecas/:idBase/:seqOs', {
@@ -15,40 +14,13 @@ export async function getLinkedParts(app: FastifyInstance) {
         }),
       },
     },
+    
     async (request) => {
       const { idBase, seqOs } = request.params;
 
-      // Query para buscar as peças vinculadas
-      const linkedParts = await prisma.chamados_itens.findMany({
-        where: {
-          ID_BASE: idBase,
-          SEQOS: seqOs,
-          TFPENDENTE: 'S',
-        },
-        select: {
-          QUANTIDADE: true,
-          CDPRODUTO: true,
-          produtos: {
-            select: {
-              NMPRODUTO: true
-            }
-          }
-        },
-      });
+      // Busca as peças vinculadas através do serviço `getLinkedParts`.
+      const linkedParts = await getLinkedParts(idBase, seqOs);
 
-      
-      if (!linkedParts || linkedParts.length === 0) {
-        throw new BadRequest('Não existem peças vinculadas para esse chamado') ;
-      }
-
-      // Mapeamento das peças vinculadas
-      const parts = linkedParts.map((peca) => ({
-        quantidade: peca.QUANTIDADE,
-        cdproduto: peca.CDPRODUTO,
-        nmproduto: peca.produtos?.NMPRODUTO,
-      }));
-
-      return { success: true, data: parts } 
-      
+      return { success: true, data: linkedParts};     
     });
 }

@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { prisma } from '../lib/prisma'
+import { getTypeCounters } from '../services/get-type-counters-service'
 
-export async function listTypeContractCounters(app: FastifyInstance) {
+export async function listTypeCounters(app: FastifyInstance) {
   app
   .withTypeProvider<ZodTypeProvider>()
   .get('/tecnicos/:idBase/:cdEquipamento/lista-tipo-medidor-contrato',
@@ -19,17 +19,10 @@ export async function listTypeContractCounters(app: FastifyInstance) {
     async (request) => {
       const { idBase, cdEquipamento } = request.params
 
-      const listTypeMedidor = await prisma.equipamento_medidores.count({
-        where: {
-            ID_BASE: idBase,
-            CDEQUIPAMENTO: cdEquipamento,                   
-        },
-        select:{
-            CDMEDIDOR: true,
-        }
-      })    
+      // Usa a função de serviço para obter as medidores
+      const counters = await getTypeCounters(idBase, cdEquipamento);
 
-      return { chamados: listTypeMedidor }   
+      return { success: true, data: {counters: counters.join(',') } };
     },
   )
 }
