@@ -1,43 +1,27 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
-import { z } from 'zod'
-import { prisma } from '../lib/prisma'
-import { BadRequest } from './_errors/bad-request'
+import { FastifyInstance } from 'fastify';
+import { ZodTypeProvider } from 'fastify-type-provider-zod';
+import z from 'zod';
+import { getAllContractCounters } from '../services/get-all-contract-counters-service';
 
-export async function getAllContractCounters(app: FastifyInstance) {
+export async function getAlltCounters(app: FastifyInstance) {
   app
-  .withTypeProvider<ZodTypeProvider>()
-  .get('/tecnicos/:idBase/:seqContrato/:cdEquipamento/todos-medidores-contrato',
-    {
+    .withTypeProvider<ZodTypeProvider>()
+    .get('/tecnicos/:idBase/:empresaId/:seqContrato/:cdEquipamento/todos-medidores-contrato', {
       schema: {
-        params: z.object({       
+        params: z.object({
           idBase: z.coerce.number(),
+          empresaId: z.coerce.number(),
           seqContrato: z.coerce.number(),
           cdEquipamento: z.coerce.number(),
         }),
       },
     },
-
     async (request) => {
-      const { idBase, seqContrato, cdEquipamento } = request.params
+      const { idBase, empresaId, seqContrato, cdEquipamento } = request.params;
 
-      const contractCounters = await prisma.contrato_itens_med.findMany({
-        where: {
-          ID_BASE: idBase,
-          CDEQUIPAMENTO: cdEquipamento,
-          SEQCONTRATO: seqContrato,
-          TFMEDIDORATIVO: 'S',
-        },
-        select: {
-          CDMEDIDOR: true,
-        },
-      })    
-      
-      if (contractCounters.length === 0) {
-        throw new BadRequest('Nenhum medidor encontrado para os parâmetros fornecidos.');
-      }
+      // Usa a função de serviço para obter os medidores
+      const contractCounters = await getAllContractCounters(idBase, empresaId, seqContrato, cdEquipamento);
 
-      return { medidores: contractCounters }   
-    },
-  )
+      return { success: true, data: { medidores: contractCounters } };
+    });
 }

@@ -28,7 +28,6 @@ export async function getCompanies(app: FastifyInstance) {
           },
         });
 
-
         if (empresas.length === 0) {
             throw new BadRequest('Empresas não encontradas!')
           }
