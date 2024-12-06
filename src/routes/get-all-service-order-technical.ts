@@ -63,25 +63,23 @@ export async function getAllServiceOrderTechnical(app: FastifyInstance) {
         },
       });
 
-      // Agrupa os equipamentos pelos códigos de equipamento
+      // Cria um mapa de equipamentos por CDEQUIPAMENTO
       const equipamentosMap = equipamentos.reduce((acc, equipamento) => {
-        const equipamentoId = equipamento.CDEQUIPAMENTO;
-        if (equipamentoId) {
-          if (!acc[equipamentoId]) {
-            acc[equipamentoId] = [];
-          }
-          acc[equipamentoId].push(equipamento);
+        if (equipamento.CDEQUIPAMENTO) {
+          acc[equipamento.CDEQUIPAMENTO] = equipamento;
         }
         return acc;
-      }, {} as Record<string, typeof equipamentos>);
+      }, {} as Record<string, typeof equipamentos[0]>);
 
-      // Associa os equipamentos correspondentes a cada chamado
+      // Associa diretamente os dados dos equipamentos ao chamado
       const chamadosComEquipamentos = chamados.map((chamado) => ({
         ...chamado,
-        equipamentos: chamado.CDEQUIPAMENTO ? equipamentosMap[chamado.CDEQUIPAMENTO] || [] : [],
+        equipamento: chamado.CDEQUIPAMENTO
+          ? equipamentosMap[chamado.CDEQUIPAMENTO] || null
+          : null,
       }));
 
-      // Retorna todos os chamados com seus respectivos equipamentos
+      // Retorna todos os chamados com os dados dos equipamentos associados diretamente
       return { success: true, chamados: chamadosComEquipamentos };
     });
-}
+  }
