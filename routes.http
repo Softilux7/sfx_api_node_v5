@@ -40,7 +40,7 @@ GET http://localhost:3333/tecnicos/TECNICOAPP/1/resumo-chamados
 ###
 
 # @name get-all-medidores-by-contrato
-GET http://localhost:3333/tecnicos/1/12/22/todos-medidores-contrato
+GET http://localhost:3333/tecnicos/1/1/11/23/todos-medidores-contrato
 
 ###
 
@@ -49,5 +49,15 @@ GET http://localhost:3333/tecnicos/TECNICOAPP/1/quantidade-chamados
 
 ###
 
-# @name get-amount-chamados
+# @name get-list-type-counters
 GET http://localhost:3333/tecnicos/1/4/lista-tipo-medidor-contrato
+
+###
+
+# @name get-detail
+GET http://localhost:3333/chamados/1054763/detail
+
+###
+
+# @name get-all-service-order-technical
+GET http://localhost:3333/tecnico/TECNICOAPP/1/todos-chamados-tecnico

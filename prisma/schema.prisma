@@ -373,6 +373,7 @@ model chamados {
   attachments            String?   @db.LongText
   data_envio_notificacao DateTime? @db.DateTime(0)
 
+  // produtos                   produtos? @relation(fields: [CDPRODUTO], references: [CDPRODUTO])
   @@index([ID_BASE, empresa_id, NUM], map: "INDEX_IDBASE_EMPRESAID_NUM")
   @@index([ID_BASE, CDDEFEITO], map: "INDEX_ID_BASE_CDDEFEITO")
   @@index([ID_BASE, CDEQUIPAMENTO], map: "INDEX_ID_BASE_CDEQUIPAMENTO")
@@ -428,6 +429,7 @@ model chamados_itens {
   ID_ORDEM_SERVICO_IT        Int?
   ID_ORDEM_SERVICO_IT_ORIGEM Int?
   produtos                   produtos? @relation(fields: [CDPRODUTO], references: [CDPRODUTO])
+  // produtos                   produtos? @relation(fields: [CDPRODUTO], references: [CDPRODUTO])
 
   @@index([empresa_id, ID_ORDEM_SERVICO_IT], map: "EMPRESA_ID_ORDER_SERVICO_IT")
   @@index([ID_BASE, empresa_id, SEQOS, CDPRODUTO], map: "ID_BASE")
@@ -561,7 +563,7 @@ model contrato_itens_med {
   ID_CONTRATO_MEDIDOR        Int
   ID_CONTRATO_MEDIDOR_ORIGEM Int
   ATUALIZADO_ILUX            String   @db.VarChar(25)
-  SEQCONTRATO                Int
+  SEQCONTRATO                Int?
   CDEQUIPAMENTO              Int
   CDMEDIDOR                  String   @db.VarChar(10)
   TFMEDIDORATIVO             String?  @db.Char(1)
