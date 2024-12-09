@@ -3,9 +3,9 @@ import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import z from 'zod';
 import { prisma } from '../lib/prisma';
 import { BadRequest } from './_errors/bad-request';
-import { getAllContractCounters } from '../services/get-all-contract-counters-service';
-import { getTypeCounters } from '../services/get-type-counters-service';
-import { getLinkedParts } from '../services/get-linked-parts-service';
+import { getAllContractCounters } from '../repositories/get-all-contract-counters-repositorie';
+import { getTypeCounters } from '../repositories/get-type-counters-repositorie';
+import { getLinkedParts } from '../repositories/get-linked-parts-repositorie';
 
 export async function getDetail(app: FastifyInstance) {
   app

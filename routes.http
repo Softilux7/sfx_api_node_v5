@@ -60,4 +60,4 @@ GET http://localhost:3333/chamados/1054763/detail
 ###
 
 # @name get-all-service-order-technical
-GET http://localhost:3333/tecnico/TECNICOAPP/1/todos-chamados-tecnico
+GET http://localhost:3333/tecnico/TECNICOAPP/1/E/todos-chamados-tecnico
