@@ -55,20 +55,6 @@ export async function getDetail(app: FastifyInstance) {
           CDDEFEITO: true,
           CDEQUIPAMENTO: true,
           SEQCONTRATO: true,
-          empresas: {
-            select: {
-              empresa_fantasia: true,
-            },
-          },
-          equipamentos: {
-            select: {
-              SERIE: true,
-              MODELO: true,
-              DEPARTAMENTO: true,
-              LOCALINSTAL: true,
-              PATRIMONIO: true,
-            },
-          },
         },        
       });
 
@@ -76,9 +62,36 @@ export async function getDetail(app: FastifyInstance) {
         throw new BadRequest('Detalhes não encontrados!');
       }
 
+      // Valida se os campos necessários para a busca de medidores estão presentes.
+      if (details.ID_BASE === null || details.empresa_id === null || details.CDEQUIPAMENTO === null) {
+        throw new BadRequest('Campos necessários não encontrados!');
+      }      
+
       const prevAtendimento = `${details.DTPREVENTREGA} ${details.HRPREVENTREGA}`;
 
       const phone = `${details.DDD} ${details.FONE}`;
+
+      const empresa = await prisma.empresas.findUnique({
+        where: {
+          id: details.empresa_id,
+        },
+        select: {
+          empresa_fantasia: true,
+        }
+      })
+
+      const equipamento = await prisma.equipamentos.findFirst({
+        where: {
+          CDEQUIPAMENTO: details.CDEQUIPAMENTO,
+        },
+        select: {
+          SERIE: true,
+          MODELO: true,
+          DEPARTAMENTO: true,
+          LOCALINSTAL: true,
+          PATRIMONIO: true,
+        },
+      })
 
       // Busca os detalhes do defeito associado ao chamado, caso exista.
       const defect = await prisma.defeitos.findFirst({
@@ -89,11 +102,6 @@ export async function getDetail(app: FastifyInstance) {
           NMDEFEITO: true,
         }
       });
-
-      // Valida se os campos necessários para a busca de medidores estão presentes.
-      if (details.ID_BASE === null || details.empresa_id === null || details.CDEQUIPAMENTO === null) {
-        throw new BadRequest('Campos necessários não encontrados!');
-      }
 
       // Busca os medidores associados ao contrato através do serviço `getAllContractCounters`.
       let counters = await getAllContractCounters(details.ID_BASE, details.empresa_id, details.SEQCONTRATO, details.CDEQUIPAMENTO);
@@ -109,7 +117,7 @@ export async function getDetail(app: FastifyInstance) {
         const linkedParts = await getLinkedParts(details.ID_BASE, details.SEQOS);
 
         // Retorno final com todos os dados requisitados
-        return { success: true, details, prevAtendimento, phone, defect, counters, linkedParts };
+        return { success: true, details, empresa, equipamento, prevAtendimento, phone, defect, counters, linkedParts };
       } else {
         // Se não houver dados de medidores, responde com sucesso falso
         return { success: false, data: [] };
