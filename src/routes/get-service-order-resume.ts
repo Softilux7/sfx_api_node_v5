@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { FastifyInstance } from 'fastify';
-import { getCompaniesByTechnical } from '../services/get-companies-technical-service';
+import { getCompaniesByTechnical } from '../repositories/get-companies-technical-repositorie';
 
 export async function getResumoChamados(app: FastifyInstance) {
     app
