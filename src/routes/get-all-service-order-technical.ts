@@ -7,16 +7,17 @@ import { BadRequest } from "./_errors/bad-request";
 export async function getAllServiceOrderTechnical(app: FastifyInstance) {
   app
     .withTypeProvider<ZodTypeProvider>()
-    .get('/tecnico/:idTecnico/:idBase/todos-chamados-tecnico', {
+    .get('/tecnico/:idTecnico/:idBase/:status/todos-chamados-tecnico', {
       schema: {
         params: z.object({
           idTecnico: z.string(),
           idBase: z.coerce.number(),
+          status: z.string(),
         }),
       },
     },
     async (request) => {
-      const { idTecnico, idBase } = request.params;
+      const { idTecnico, idBase, status } = request.params;
 
       // Consulta Prisma para buscar os chamados
       const chamados = await prisma.chamados.findMany({
@@ -24,14 +25,20 @@ export async function getAllServiceOrderTechnical(app: FastifyInstance) {
           NMSUPORTET: idTecnico,
           ID_BASE: idBase,
           TFLIBERADO: 'S',
+          STATUS: status,
         },
         select: {
+          id: true,
+          STATUS: true,
+          DTATENDIMENTO: true,
           empresa_id: true,
           SEQCONTRATO: true,
           CDEQUIPAMENTO: true,
           CDCLIENTE: true,
           NMCLIENTE: true,
         },
+
+        take: 20
       });
 
       // Verifica se chamados não contém resultados
@@ -61,6 +68,8 @@ export async function getAllServiceOrderTechnical(app: FastifyInstance) {
           LOCALINSTAL: true,
           PATRIMONIO: true,
         },
+
+        take: 20
       });
 
       // Cria um mapa de equipamentos por CDEQUIPAMENTO
