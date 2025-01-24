@@ -10,15 +10,13 @@ import { getClients } from './routes/get-clients'
 import { getDetail } from './routes/get-detail'
 import { getResumoChamados } from './routes/get-service-order-resume'
 import { listTypeCounters } from './routes/get-type-counters'
+import { getStatus } from './routes/get-status'
+import { createAtendimento } from './routes/create-attendance'
+import { updateAtendimento } from './routes/update-attendance'
+import { getAllEquipmentMeters } from './routes/get-all-equipment-meters'
 
 // Instância Fastify
 const app = fastify()
-
-app.register(getAllServiceOrderTechnical)
-app.register(getClients)
-app.register(getDetail)
-app.register(getResumoChamados)
-app.register(listTypeCounters)
 
 // CORS
 app.register(fastifyCors, {
@@ -30,7 +28,18 @@ app.setValidatorCompiler(validatorCompiler)
 app.setSerializerCompiler(serializerCompiler)
 app.setErrorHandler(errorHandler)
 
+// Routes
+app.register(getAllServiceOrderTechnical)
+app.register(getClients)
+app.register(getDetail)
+app.register(createAtendimento)
+app.register(updateAtendimento)
+app.register(getResumoChamados)
+app.register(listTypeCounters)
+app.register(getAllEquipmentMeters)
+app.register(getStatus)
+
 // Instância API
 app.listen({ port: 3333, host: '0.0.0.0' }).then(() => {
-  console.log('HTTP server is running')
+  console.log('HTTP server is running 🔥')
 })

@@ -193,7 +193,7 @@ model atendimentos {
   ERR                         String?   @db.Text
   ATUALIZADO_ILUX             String?   @default("") @db.VarChar(25)
   ID_BASE                     Int?      @default(-1)
-  ATIVO_APP                   Boolean?
+  ATIVO_APP                   Int?
   ASSINATURA_APP              String?   @db.VarChar(255)
   ANDAMENTO_CHAMADO_APP       Int?
   SINCRONIZADO_APP            Int?      @db.TinyInt
