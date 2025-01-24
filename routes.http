@@ -4,60 +4,95 @@
 
 ### CHAMADOS ###
 
-# @name get-company-technical
-GET http://localhost:3333/tecnicos/TECNICOAPP/1/empresas
-
-###
-
-# @name get-users
-GET http://localhost:3333/usuarios/1/names
-
-###
-
 # @name get-linked-parts
-GET http://localhost:3333/pecas/1/1430
-
-###
-
-# @name get-companies
-GET http://localhost:3333/empresas/1
+GET {{baseUrl}}/pecas/1/1430
 
 ###
 
 # @name get-clients
-GET http://localhost:3333/clientes/1
+GET {{baseUrl}}/clientes/1
 
 ###
 
 # @name get-status
-GET http://localhost:3333/status/:id/:idEmpresa/:idBase
+GET {{baseUrl}}/status/:id/:idEmpresa/:idBase
 
 ###
 
 # @name get-resumo-chamados
-GET http://localhost:3333/tecnicos/TECNICOAPP/1/resumo-chamados
+GET {{baseUrl}}/tecnicos/TECNICOAPP/1/resumo-chamados
 
 ###
 
 # @name get-all-medidores-by-contrato
-GET http://localhost:3333/tecnicos/1/1/11/23/todos-medidores-contrato
+GET {{baseUrl}}/tecnicos/1/1/11/23/todos-medidores-contrato
 
 ###
 
 # @name get-amount-chamados
-GET http://localhost:3333/tecnicos/TECNICOAPP/1/quantidade-chamados
+GET {{baseUrl}}/tecnicos/TECNICOAPP/1/quantidade-chamados
 
 ###
 
 # @name get-list-type-counters
-GET http://localhost:3333/tecnicos/1/4/lista-tipo-medidor-contrato
+GET {{baseUrl}}/tecnicos/1/4/lista-tipo-medidor-contrato
 
 ###
 
 # @name get-detail
-GET http://localhost:3333/chamados/1054763/detail
+GET {{baseUrl}}/chamados/1054763/detail
 
 ###
 
 # @name get-all-service-order-technical
-GET http://localhost:3333/tecnico/TECNICOAPP/1/E/todos-chamados-tecnico
+GET {{baseUrl}}/tecnico/TECNICOAPP/1/E/todos-chamados-tecnico
+
+###
+
+# @name get-status
+GET {{baseUrl}}/status/1/M
+
+###
+
+# @name create-attendance 
+POST {{baseUrl}}/atendimentos/add
+Content-Type: application/json
+
+{
+  "SEQOS": 1430,
+  "CDSTATUS": "M1",
+  "STATUS": "M",
+  "NMATENDENTE": "TESTE",
+  "OBSERVACAO": "Início do atendimento",
+  "chamado_id": 3261029,
+  "empresa_id": 46,
+  "ID_BASE": 1,
+  "ATIVO_APP": 1,
+  "KMINICIAL": 0,
+  "PLACAVEICULO": "ABC-1234",
+  "ANDAMENTO_CHAMADO_APP": 1,
+  "ORIGEM_CADASTRO": "API TESTE",
+  "granted_geolocation": 1,
+  "DESLOCAMENTO_APP": 10
+}
+
+###
+
+# @name update-attendace
+PUT {{baseUrl}}/atendimentos/update
+Content-Type: application/json
+
+{
+  "id": 13320247,
+  "ID_BASE": 1, 
+  "progress": 2,
+  "params": {
+    "HRVIAGEMFIN": "16:08",
+    "DTVIAGEMFIN": "2025-01-14T19:43:49.984Z"
+  }
+}
+
+###
+
+# @name get-all-meters
+GET {{baseUrl}}/equipment-meters/1/6
