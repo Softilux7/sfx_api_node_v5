@@ -1,8 +1,9 @@
 import twilio from 'twilio';
+import { env } from '../env';
 
 // As variáveis de ambiente devem ser configuradas no seu .env para segurança
-const accountSid = 'ACe03fc6282bb0c24b829c28dfdcfd6043';
-const authToken = '28ebfae35dd13c66c939bfadc2700288';
+const accountSid = env.ACCOUNT;
+const authToken = env.AUTH;
 
 // Verifique se as credenciais estão configuradas corretamente
 if (!accountSid || !authToken) {
