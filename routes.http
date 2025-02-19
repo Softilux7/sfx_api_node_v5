@@ -45,7 +45,7 @@ GET {{baseUrl}}/chamados/1054763/detail
 ###
 
 # @name get-all-service-order-technical
-GET {{baseUrl}}/tecnico/TECNICOAPP/1/E/todos-chamados-tecnico
+GET {{baseUrl}}/tecnico/TECNICOAPP/1/M/todos-chamados-tecnico
 
 ###
 
@@ -66,7 +66,7 @@ Content-Type: application/json
   "OBSERVACAO": "Início do atendimento",
   "chamado_id": 3261029,
   "empresa_id": 46,
-  "ID_BASE": 1,
+  "ID_BASE": 1,   
   "ATIVO_APP": 1,
   "KMINICIAL": 0,
   "PLACAVEICULO": "ABC-1234",
@@ -95,4 +95,43 @@ Content-Type: application/json
 ###
 
 # @name get-all-meters
-GET {{baseUrl}}/equipment-meters/1/6
+GET {{baseUrl}}/equipment-meters/1/304
+
+###
+
+# @name update-attendace-meters
+POST {{baseUrl}}/atendimentos-medidores/add
+Content-Type: application/json
+
+{
+    "id": 13320253,
+    "ID_BASE": 1,
+    "empresa_id": 46, 
+    "cdequipamento": 304,
+    "informante": "TESTE API",
+    "meters_list": [
+      {
+        "CDMEDIDOR": "SCANNER",
+        "MEDIDOR": 1
+      },
+      {
+        "CDMEDIDOR": "CORA4",
+        "MEDIDOR": 1
+      }
+    ]
+}
+
+###
+
+# @name get-history
+GET {{baseUrl}}/history/1/orders/1430/304
+
+###
+
+# @name send-sms
+POST {{baseUrl}}/send-sms
+Content-Type: application/json
+
+{
+  "phone": "+5548984467979"
+}
