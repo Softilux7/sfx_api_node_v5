@@ -17,17 +17,27 @@ export async function updateAtendimento(app: FastifyInstance) {
             progress: z.number(), // Progresso atual do atendimento
             ID_BASE: z.coerce.number(),
             params: z.object({
-              VALFINANCEIRO: z.string().optional(), // Exemplo de valor financeiro que será convertido
-              KMFINAL: z.coerce.number().optional(),
-              KMINICIAL: z.coerce.number().optional(),
-              HRATENDIMENTOFIN: z.string().optional(), // Hora de fim do atendimento
-              HRATENDIMENTO: z.string().optional(), // Hora de fim do atendimento
-              TEMPOATENDIMENTO: z.number().optional(), // Tempo de atendimento
-              DTVIAGEMFIN: z.coerce.date().optional(), // Data e hora de fim da viagem
-              DTVIAGEMINI: z.date().optional(), // Data e hora de início da viagem
-              HRVIAGEMINI: z.string().optional(), // Hora de início da viagem
-              HRVIAGEMFIN: z.string().optional(), // Hora de fim da viagem
+              VALFINANCEIRO: z.string().optional(),
+              VALESTACIONAMENTO: z.number().optional(),
+              VALPEDAGIO: z.number().optional(),
+              VALOUTRASDESP: z.number().optional(),
+              QUILOMETRAGEM: z.number().optional(),
+              CDMEDIDOR: z.string().optional(),
+              MEDIDOR: z.number().optional(),
+              HRATENDIMENTOFIN: z.string().optional(),
+              HRATENDIMENTO: z.string().optional(),
+              TEMPOATENDIMENTO: z.number().optional(),
+              DTVIAGEMFIN: z.coerce.date().optional(),
+              DTVIAGEMINI: z.date().optional(),
+              HRVIAGEMINI: z.string().optional(),
+              HRVIAGEMFIN: z.string().optional(),
               DESLOCAMENTO_APP: z.number().optional(),
+              KMFINAL: z.coerce.number().optional(),
+              OBSERVACAO: z.string().optional(),
+              SINTOMA: z.string().optional(),
+              ACAO: z.string().optional(),
+              CAUSA: z.string().optional(),
+              NOME_CONTATO: z.string().optional(),
             }),
           }),
         },
