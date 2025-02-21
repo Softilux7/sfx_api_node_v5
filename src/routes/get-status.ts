@@ -1,37 +1,26 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { prisma } from '../lib/prisma';
+import { getStatusRepository } from '../repositories/get-status-repositorie';
 
 export async function getStatus(app: FastifyInstance) {
   app
     .withTypeProvider<ZodTypeProvider>()
-    .get('/status/:idEmpresa/:type', {
+    .get('/status/:type/:idEmpresa/:idBase', {
       schema: {
         params: z.object({
-          idEmpresa: z.coerce.number(),
           type: z.string(),
+          idEmpresa: z.coerce.number(),
+          idBase: z.coerce.number(),
         }),
       },
     },
       async (request) => {
-        const { idEmpresa, type } = request.params;
+        const { type, idEmpresa, idBase } = request.params;
 
-        // Consulta Prisma para buscar o status
-        const status = await prisma.status.findMany({
-          where: {
-            TIPO: type,
-            ID_BASE: idEmpresa,
-            TFINATIVO: 'N',
-          },
-          select: {
-            NMSTATUS: true,
-            CDSTATUS: true,
-            TIPO: true,
-          },
-        });
+        // Chama o repositório
+        const status = await getStatusRepository(type, idEmpresa, idBase);
 
-
-        return { success: true, data: status };
+        return status; // Retorna o JSON já tratado pelo repositório
       });
 }
