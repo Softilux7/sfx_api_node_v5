@@ -20,6 +20,7 @@ import { sendSMS } from './routes/send-sms'
 import fastifyStatic from "@fastify/static";
 import * as path from "path";
 import { uploadPhotos } from './routes/upload-photos'
+import { getHistoryAttendance } from './routes/get-history-attendance'
 
 // Instância Fastify
 const app = fastify()
@@ -53,6 +54,7 @@ app.register(sendSMS)
 app.register(getAllEquipmentMeters)
 app.register(getStatus)
 app.register(uploadPhotos)
+app.register(getHistoryAttendance)
 // Instância API
 app.listen({ port: 3333, host: '0.0.0.0' }).then(() => {
   console.log('HTTP server is running 🔥')

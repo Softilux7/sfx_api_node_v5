@@ -15,7 +15,7 @@ GET {{baseUrl}}/clientes/1
 ###
 
 # @name get-status
-GET {{baseUrl}}/status/:id/:idEmpresa/:idBase
+GET {{baseUrl}}/status/P/1/1
 
 ###
 
@@ -125,6 +125,11 @@ Content-Type: application/json
 
 # @name get-history
 GET {{baseUrl}}/history/1/orders/1430/304
+
+###
+
+# @name get-history-attendance
+GET {{baseUrl}}/history/attendance/1/3261029
 
 ###
 
