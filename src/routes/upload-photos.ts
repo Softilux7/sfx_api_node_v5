@@ -20,7 +20,7 @@ export async function uploadPhotos(app: FastifyInstance) {
     const filePath = path.join(uploadDir, data.filename);
     const writeStream = fs.createWriteStream(filePath);
     
-    await data.file.pipe(writeStream);
+    data.file.pipe(writeStream);
 
     return reply.send({ success: true, file: `/uploads/${data.filename}` });
   });

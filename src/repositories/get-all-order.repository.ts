@@ -18,7 +18,7 @@ export async function getAllOrdersRepository(idTecnico: string, idBase: number, 
     AND c.ID_BASE = ${idBase}
     AND c.TFLIBERADO = 'S'
     AND c.STATUS = ${status}
-    LIMIT 20
+    LIMIT 30
   `;
 
     // Transformação dos dados para o formato desejado
@@ -32,6 +32,7 @@ export async function getAllOrdersRepository(idTecnico: string, idBase: number, 
                 openDate: chamado.DTINCLUSAO?.toISOString() || null,
                 status: chamado.STATUS,
                 cdstatus: chamado.CDSTATUS,
+                cdempresa: chamado.empresa_id,
                 company: chamado.empresa_fantasia,
                 client: {
                     code: chamado.CDCLIENTE,

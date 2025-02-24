@@ -1,11 +1,14 @@
 import { BadRequest } from "../routes/_errors/bad-request";
 import { prisma } from "../lib/prisma";
+import dayjs from "dayjs";
 
 export async function updateAttendance(
     id: number,
     ID_BASE: number,
     progress: number,
     params: {
+        KMINICIAL?: number | undefined;
+        ID_TECNICO?: string | undefined;
         VALFINANCEIRO?: string | undefined;
         VALESTACIONAMENTO?: number | undefined;
         VALPEDAGIO?: number | undefined;
@@ -27,41 +30,39 @@ export async function updateAttendance(
         ACAO?: string | undefined;
         CAUSA?: string | undefined;
         NOME_CONTATO?: string | undefined;
+        CDSTATUS?: string | undefined;
+        STATUS?: string | undefined;
+        SEQOS?: number | undefined
     }
 ) {
 
     // Lógica para diferentes etapas do progresso
     switch (progress) {
         case 2:
-            // Começar viagem
-            const startTrip = prisma.atendimentos.update({
-                where: {
-                    id,
-                    ID_BASE,
-                },
-                data: {
-                    ANDAMENTO_CHAMADO_APP: 2,
-                    HRVIAGEMINI: params.HRVIAGEMINI,
-                }
-            })
 
-            if (!startTrip) {
-                throw new BadRequest('Não foi possível atualizar o progresso [2]')
-            }
-
-            return startTrip;
+        //## COMEÇAR VIAGEM ##
+        await prisma.$executeRaw`
+        UPDATE atendimentos
+        SET ANDAMENTO_CHAMADO_APP = 2, HRVIAGEMINI = ${params.HRVIAGEMINI}
+        WHERE id = ${id} AND ID_BASE = ${ID_BASE}`;
+        
+        // Seleciona o atendimento atualizado
+        const updatedAtendimento: any[] = await prisma.$queryRaw`
+            SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}`;
+        
+        if (updatedAtendimento.length === 0) {
+            throw new BadRequest('Não foi possível atualizar o progresso [2]');
+        }
+        
+        return updatedAtendimento[0];
 
         case 3:
             // PAUSA -  Antes de chegar cliente
-            const pauseBeforeClient = prisma.atendimentos.update({
-                where: {
-                    id,
-                    ID_BASE,
-                },
-                data: {
-                    ANDAMENTO_CHAMADO_APP: 3,
-                }
-            })
+            const pauseBeforeClient = await prisma.$executeRaw`
+                UPDATE atendimentos
+                SET ANDAMENTO_CHAMADO_APP = 3
+                WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
 
             if (!pauseBeforeClient) {
                 throw new BadRequest('Não foi possível atualizar o progresso [3]')
@@ -69,244 +70,247 @@ export async function updateAttendance(
             break;
 
         case 4:
-            // Chegada cliente
-            const arrivalTrip = prisma.atendimentos.update({
-                where: {
-                    id,
-                    ID_BASE,
-                },
-                data: {
-                    ANDAMENTO_CHAMADO_APP: 4,
-                    DTVIAGEMFIN: params.DTVIAGEMFIN,
-                    HRVIAGEMFIN: params.HRVIAGEMFIN,
-                    KMFINAL: params.KMFINAL
-                }
-            })
-            console.log(arrivalTrip, "## CASE CHEGADA CLIENTE ##")
+        // Chegada cliente
+        await prisma.$executeRaw`
+            UPDATE atendimentos
+            SET 
+                ANDAMENTO_CHAMADO_APP = 4,
+                DTVIAGEMFIN = ${params.DTVIAGEMFIN},
+                HRVIAGEMFIN = ${params.HRVIAGEMFIN},
+                KMFINAL = ${params.KMFINAL}
+            WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+        `;
 
-            if (!arrivalTrip) {
-                throw new BadRequest('Não foi possível atualizar o progresso [4]')
-            }
+        const updatedArrivalTrip: any[] = await prisma.$queryRaw`
+            SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+        `;
 
-            return arrivalTrip;
+        if (!updatedArrivalTrip || updatedArrivalTrip.length === 0) {
+            throw new BadRequest('Não foi possível atualizar o progresso [4]');
+        }
+
+        console.log(updatedArrivalTrip[0], "## CHEGADA CLIENTE ##");
+
+        return updatedArrivalTrip[0];
+
 
         case 5:
             // PAUSA
-            const pauseAfterClient = prisma.atendimentos.update({
-                where: {
-                    id,
-                    ID_BASE,
-                },
-                data: {
-                    ANDAMENTO_CHAMADO_APP: 5,
-                }
-            })
+            const pauseAfterClient = await prisma.$queryRaw`
+                UPDATE atendimentos
+                SET ANDAMENTO_CHAMADO_APP = 5
+                WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
 
             if (!pauseAfterClient) {
-                throw new BadRequest('Não foi possível atualizar o progresso [5]')
+                throw new BadRequest('Não foi possível atualizar o progresso [5]');
             }
 
             return pauseAfterClient;
 
         case 6:
-            // Em atendimento
-            const inAttendace = prisma.atendimentos.update({
-                where: {
-                    id,
-                    ID_BASE,
-                },
-                data: {
-                    ANDAMENTO_CHAMADO_APP: 6,
-                    HRATENDIMENTO: params.HRATENDIMENTO,
-                }
-            })
-            console.log(inAttendace, "## CASE INICIAR ATENDIMENTO ##")
+            // Em Atendimento
+            await prisma.$executeRaw`
+                UPDATE atendimentos
+                SET ANDAMENTO_CHAMADO_APP = 6,
+                    HRATENDIMENTO = ${params.HRATENDIMENTO}
+                WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
 
-            if (!inAttendace) {
-                throw new BadRequest('Não foi possível atualizar o progresso [6]')
+            const updatedInAttendance: any[] = await prisma.$queryRaw`
+                SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
+
+            if (updatedInAttendance.length === 0) {
+                throw new BadRequest('Não foi possível atualizar o progresso [6]');
             }
 
-            return inAttendace;
+            console.log(updatedInAttendance[0], "## CASE INICIAR ATENDIMENTO ##");
+
+            return updatedInAttendance[0];
+
 
         case 7:
             // PAUSA
-            const pauseInAttendace = prisma.atendimentos.update({
-                where: {
-                    id,
-                    ID_BASE,
-                },
-                data: {
-                    ANDAMENTO_CHAMADO_APP: 7,
-                }
-            })
+            const pauseInAttendace = await prisma.$queryRaw`
+                UPDATE atendimentos
+                SET ANDAMENTO_CHAMADO_APP = 7
+                WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
+
+            console.log(pauseInAttendace, "## CASE PAUSA NO ATENDIMENTO ##");
 
             if (!pauseInAttendace) {
-                throw new BadRequest('Não foi possível atualizar o progresso [7]')
+                throw new BadRequest('Não foi possível atualizar o progresso [7]');
             }
 
             return pauseInAttendace;
 
         case 8:
             // Atendimento finalizado
-            const finishAttendace = prisma.atendimentos.update({
-                where: {
-                    id,
-                    ID_BASE,
-                },
-                data: {
-                    ANDAMENTO_CHAMADO_APP: 8,
-                }
-            })
-            console.log(finishAttendace, "## CASE FINALIZAR ATENDIMENTO ##")
+            await prisma.$executeRaw`
+                UPDATE atendimentos
+                SET ANDAMENTO_CHAMADO_APP = 8
+                WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
 
-            if (!finishAttendace) {
-                throw new BadRequest('Não foi possível atualizar o progresso [8]')
+            const updatedFinishAttendance: any[] = await prisma.$queryRaw`
+                SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
+
+            if (updatedFinishAttendance.length === 0) {
+                throw new BadRequest('Não foi possível atualizar o progresso [8]');
             }
 
-            return finishAttendace;
+            console.log(updatedFinishAttendance[0], "## CASE FINALIZAR ATENDIMENTO ##");
+
+            return updatedFinishAttendance[0];
 
         case 10:
-            // Formulário finalizado
-            const formAttendance = prisma.atendimentos.update({
-                where: {
-                    id,
-                    ID_BASE,
-                },
-                data: {
-                    OBSERVACAO: params.OBSERVACAO,
-                    SINTOMA: params.SINTOMA,
-                    CAUSA: params.CAUSA,
-                    ACAO: params.ACAO,
-                    VALESTACIONAMENTO: params.VALESTACIONAMENTO,
-                    VALPEDAGIO: params.VALPEDAGIO,
-                    VALOUTRASDESP: params.VALOUTRASDESP,
-                    NOME_CONTATO: params.NOME_CONTATO,
-                    CDMEDIDOR: params.CDMEDIDOR,
-                    MEDIDOR: params.MEDIDOR,
-                    HRVIAGEMFIN: params.HRVIAGEMFIN,
-                    HRATENDIMENTOFIN: params.HRATENDIMENTOFIN,
-                    ANDAMENTO_CHAMADO_APP: 10,
-                }
-            })
-            console.log(formAttendance, "## CASE FINALIZAR FORMULÁRIO ##")
+        // Formulário finalizado
+        await prisma.$executeRaw`
+            UPDATE atendimentos
+            SET 
+                OBSERVACAO = ${params.OBSERVACAO},
+                SINTOMA = ${params.SINTOMA},
+                CAUSA = ${params.CAUSA},
+                ACAO = ${params.ACAO},
+                VALESTACIONAMENTO = ${params.VALESTACIONAMENTO},
+                VALPEDAGIO = ${params.VALPEDAGIO},
+                VALOUTRASDESP = ${params.VALOUTRASDESP},
+                NOME_CONTATO = ${params.NOME_CONTATO},
+                CDMEDIDOR = ${params.CDMEDIDOR},
+                MEDIDOR = ${params.MEDIDOR},
+                HRVIAGEMFIN = ${params.HRVIAGEMFIN},
+                HRATENDIMENTOFIN = ${params.HRATENDIMENTOFIN},
+                ANDAMENTO_CHAMADO_APP = 10
+            WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+        `;
 
-            if (!formAttendance) {
-                throw new BadRequest('Não foi possível atualizar o progresso [10]')
-            }
+        // Atualiza o status do chamado
+        await prisma.$executeRaw`
+            UPDATE chamados 
+            SET 
+                STATUS = ${params.STATUS},
+                CDSTATUS = ${params.CDSTATUS}
+            WHERE ID_BASE = ${ID_BASE} AND SEQOS = ${params.SEQOS}
+        `;
 
-            return formAttendance;
+        // Buscar os dados atualizados
+        const updatedFormAttendance: any[] = await prisma.$queryRaw`
+            SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+        `;
+
+        if (updatedFormAttendance.length === 0) {
+            throw new BadRequest('Não foi possível atualizar o progresso [10]');
+        }
+
+        return updatedFormAttendance[0];
 
         case 11:
             // Assinatura concluída
-            break;
+
+            // Formata os horários recebidos no padrão HH:mm:ss
+            const HRATENDIMENTOINI = dayjs(params.HRATENDIMENTO).format('HH:mm:ss');
+            const HRATENDIMENTOFIN = dayjs(params.HRATENDIMENTOFIN).format('HH:mm:ss');
+
+            // Função para calcular o tempo de atendimento em minutos
+            const getTimeService = (start: string, end: string) => {
+                const diff = dayjs(`1970-01-01T${end}`).diff(dayjs(`1970-01-01T${start}`), 'minute');
+                return Math.max(0, diff); // Evita valores negativos
+            };
+
+            const TEMPOATENDIMENTO = getTimeService(HRATENDIMENTOINI, HRATENDIMENTOFIN);
+
+            // Atualiza a tabela atendimentos
+            await prisma.$executeRaw`
+                UPDATE atendimentos
+                SET 
+                    HRATENDIMENTOINI = ${HRATENDIMENTOINI},
+                    HRATENDIMENTOFIN = ${HRATENDIMENTOFIN},
+                    TEMPOATENDIMENTO = ${TEMPOATENDIMENTO},
+                    ANDAMENTO_CHAMADO_APP = 11
+                WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
+
+            // Buscar os dados atualizados
+            const updatedAttendance: any[] = await prisma.$queryRaw`
+                SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
+
+            if (!updatedAttendance || updatedAttendance.length === 0) {
+                throw new BadRequest('Não foi possível atualizar o progresso [11]');
+            }
+
+            return updatedAttendance[0];
+
 
         case 15:
             // Atendimento Cancelado
             break;
 
         case 30:
-            // Consulta os dados do atendimento e do técnico em uma única requisição
-            // const attendance = await prisma.atendimentos.findUnique({
-            //     where: { id, ID_BASE },
-            //     select: {
-            //         NMATENDENTE: true,
-            //         KMFINAL: true,
-            //         KMINICIAL: true,
-            //         HRVIAGEMINI: true,
-            //         HRVIAGEMFIN: true,
-            //         TEMPOATENDIMENTO: true,
-            //         DESLOCAMENTO_APP: true
-            //     }
-            // });
+        // Formata os horários de início e fim da viagem no formato HH:mm:ss
+        const HRVIAGEMINI = dayjs(params.HRVIAGEMINI).format('HH:mm:ss');
+        const HRVIAGEMFIN = dayjs(params.HRVIAGEMFIN).format('HH:mm:ss');
 
-            // if (!attendance) {
-            //     throw new Error("Atendimento não encontrado");
-            // }
+        // Função para calcular o tempo de viagem e formatar como HH:mm
+        const getTimeServiceFormatted = (start: string, end: string) => {
+            const diffMinutes = dayjs(`1970-01-01T${end}`).diff(dayjs(`1970-01-01T${start}`), 'minute');
+            const hours = Math.floor(diffMinutes / 60);
+            const minutes = diffMinutes % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        };
 
-            // const { KMFINAL, KMINICIAL, HRVIAGEMINI, HRVIAGEMFIN, NMATENDENTE, TEMPOATENDIMENTO, DESLOCAMENTO_APP } = attendance;
+        const TEMPOVIAGEM = getTimeServiceFormatted(HRVIAGEMINI, HRVIAGEMFIN);
 
-            // if (!HRVIAGEMINI || !HRVIAGEMFIN) {
-            //     throw new Error("Horário de viagem inválido");
-            // }
-            // if (!NMATENDENTE) {
-            //     throw new Error("Técnico sem nome");
-            // }
+        // Busca informações do técnico para cálculo do valor do atendimento
+        const tecnico = await prisma.$queryRaw`
+            SELECT TARIFA_HORA, COBRANCA_HORA_CHEIA, COBRANCA_TEMPO_VIAGEM, VALOR_KM
+            FROM tecnicos
+            WHERE ID_TECNICO = ${params.ID_TECNICO}
+        `;
 
-            // // Calcula o tempo de viagem
-            // const travelTime = getTimeService(HRVIAGEMINI, HRVIAGEMFIN);
-            // const hours = String(Math.floor(travelTime / 60)).padStart(2, "0");
-            // const minutes = String(travelTime % 60).padStart(2, "0");
-            // const TEMPOVIAGEM = `${hours}:${minutes}`;
+        if (!tecnico) {
+            throw new BadRequest('Não foi possível obter informações do técnico.');
+        }
 
-            // // Define os valores de KM
-            // const kmFinal = KMFINAL ?? 0;
-            // const kmInicial = KMINICIAL ?? 0;
+        const { TARIFA_HORA, COBRANCA_HORA_CHEIA, COBRANCA_TEMPO_VIAGEM, VALOR_KM } = tecnico;
 
-            // // Consulta os dados do técnico
-            // const tecnico = await prisma.tecnicos.findFirst({
-            //     where: {
-            //         NMSUPORTE: NMATENDENTE,
-            //         ID_BASE,
-            //     },
-            //     select: {
-            //         VALHRATENDIMENTO: true,
-            //         VALKMATENDIMENTO: true,
-            //         TFCOBRARHRCHEIA: true,
-            //         TFCOBRARTEMPOVIAGEM: true,
-            //         CDFORNECEDOR: true
-            //     }
-            // });
+        // Calcula o valor do atendimento
+        let VALATENDIMENTO = 0;
+        if (COBRANCA_HORA_CHEIA || COBRANCA_TEMPO_VIAGEM) {
+            const tempoAtendimentoMinutos = dayjs(`1970-01-01T${params.TEMPOATENDIMENTO}`).diff(dayjs('1970-01-01T00:00:00'), 'minute');
+            const horasCobradas = COBRANCA_HORA_CHEIA ? Math.ceil(tempoAtendimentoMinutos / 60) : tempoAtendimentoMinutos / 60;
+            VALATENDIMENTO = horasCobradas * TARIFA_HORA;
+        }
 
-            // if (!tecnico) {
-            //     throw new Error("Técnico não encontrado");
-            // }
+        // Calcula o valor da quilometragem, se aplicável
+        let VALKM = 0;
+        if (params.KMINICIAL && params.KMFINAL && VALOR_KM) {
+            const distancia = Math.max(0, params.KMFINAL - params.KMINICIAL);
+            VALKM = distancia * VALOR_KM;
+        }
 
-            // // Somente para técnicos não terceirizados
-            // if (!tecnico.CDFORNECEDOR || tecnico.CDFORNECEDOR <= 0) {
-            //     if (tecnico.VALHRATENDIMENTO && tecnico.VALKMATENDIMENTO) {
-            //         let timeService = TEMPOATENDIMENTO ?? 0;
+        // Atualiza a tabela atendimentos com os valores calculados
+        const concludeAttendance = await prisma.$queryRaw`
+            UPDATE atendimentos
+            SET HRVIAGEMINI = ${HRVIAGEMINI},
+                HRVIAGEMFIN = ${HRVIAGEMFIN},
+                TEMPOVIAGEM = ${TEMPOVIAGEM},
+                VALATENDIMENTO = ${VALATENDIMENTO},
+                VALKM = ${VALKM},
+                ANDAMENTO_CHAMADO_APP = 30
+            WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+        `;
 
-            //         // Verifica se é para cobrar hora cheia
-            //         if (tecnico.TFCOBRARHRCHEIA === 'S') {
-            //             timeService = Math.ceil(timeService / 60) * 60;
-            //         }
+        console.log(concludeAttendance, "## PROGRESSO 30 ATUALIZADO ##");
 
-            //         // Verifica se é para cobrar tempo de viagem
-            //         if (tecnico.TFCOBRARTEMPOVIAGEM === 'S') {
-            //             timeService += travelTime;
-            //         }
+        if (!concludeAttendance) {
+            throw new BadRequest('Não foi possível atualizar o progresso [30]');
+        }
 
-            //         // Calcula o valor do atendimento
-            //         const VALATENDIMENTO = Math.round(timeService * (tecnico.VALHRATENDIMENTO / 60) * 100) / 100;
-            //         let VALKM = 0;
-
-            //         // Se deslocamento for pelo app, calcula quilometragem
-            //         if (DESLOCAMENTO_APP === 1) {
-            //             VALKM = Math.round((kmFinal - kmInicial) * tecnico.VALKMATENDIMENTO * 100) / 100;
-            //         }
-            //     }
-            // }
-
-            // const update = prisma.atendimentos.update({
-            //     where: {
-            //         id,
-            //         ID_BASE,
-            //     },
-            //     data: {
-            //         TEMPOVIAGEM,
-            //         VALATENDIMENTO,
-            //         VALKM,
-            //         KMFINAL,
-            //         ANDAMENTO_CHAMADO_APP: 30,
-            //     }
-            // })
-            // console.log(update, "## CASE FINALIZAR FORMULÁRIO ##")
-
-            // if (!update) {
-            //     throw new BadRequest('Não foi possível atualizar o progresso [10]')
-            // }
-
-            // return update;
+        return concludeAttendance;
 
 
         default:
