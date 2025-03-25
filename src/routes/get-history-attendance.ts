@@ -14,12 +14,9 @@ export async function getHistoryAttendance(app: FastifyInstance) {
         },
     }, async (request, reply) => {
         const { ID_BASE, idChamado } = request.params;
+
         const attendanceHistory = await getAttendanceHistory(ID_BASE, idChamado);
 
-         if (!attendanceHistory) {
-            throw new BadRequest('Nenhum atendimento encontrado')
-            }
-
-            return reply.send({ success: true, data: attendanceHistory });       
+        return reply.send({ success: true, data: attendanceHistory });
     });
 }

@@ -2,23 +2,15 @@ import { prisma } from '../lib/prisma';
 import { BadRequest } from '../routes/_errors/bad-request';
 
 export async function getCompanies(idBase: number) {
-    // Consulta Prisma para buscar as empresas
-    const empresas = await prisma.empresas.findMany({
-        where: {
-          matriz_id: idBase,
-        },
-        select: {
-          id: true,
-          empresa_fantasia: true,
-        },
-      });
+  
+    const empresas = await prisma.$queryRaw<{ id: number; empresa_fantasia: string }[]>`
+    SELECT id, empresa_fantasia FROM empresas WHERE matriz_id = ${idBase}`;
 
-      // Verifica se as empresas foram encontradas
-      if (empresas.length === 0) {
-        throw new BadRequest('Empresas não encontradas!')
-      }
+    // Verifica se as empresas foram encontradas
+    if (empresas.length === 0) {
+        throw new BadRequest('Empresas não encontradas!');
+    }
 
-       // Retorna o empresas encontradas
-       return { success: true, data: empresas}
-    ;
+    // Retorna as empresas encontradas
+    return { success: true, data: empresas };
 }

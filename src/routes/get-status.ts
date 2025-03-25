@@ -6,20 +6,19 @@ import { getStatusRepository } from '../repositories/get-status-repositorie';
 export async function getStatus(app: FastifyInstance) {
   app
     .withTypeProvider<ZodTypeProvider>()
-    .get('/status/:type/:idEmpresa/:idBase', {
+    .get('/status/:idEmpresa/:type', {
       schema: {
         params: z.object({
           type: z.string(),
-          idEmpresa: z.coerce.number(),
-          idBase: z.coerce.number(),
+          idEmpresa: z.coerce.number()
         }),
       },
     },
       async (request) => {
-        const { type, idEmpresa, idBase } = request.params;
+        const { type, idEmpresa } = request.params;
 
         // Chama o repositório
-        const status = await getStatusRepository(type, idEmpresa, idBase);
+        const status = await getStatusRepository(type, idEmpresa);
 
         return status; // Retorna o JSON já tratado pelo repositório
       });

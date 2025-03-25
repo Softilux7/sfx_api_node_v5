@@ -18,7 +18,7 @@ export async function getResumoChamados(app: FastifyInstance) {
             const { tecnicoId, idBase } = request.params;
 
             const data = await getResumoChamadosRepository(tecnicoId, idBase);
-            
-            return { success: true, data }           
+
+            return { success: true, data }
         });
 }

@@ -9,7 +9,7 @@ export async function getTypeCounters(idBase: number, cdEquipamento: number) {
     AND CDEQUIPAMENTO = ${cdEquipamento}
   `;
 
-  if (!contractCounters.length) {
+  if (contractCounters.length === 0) {
     throw new BadRequest('Código de Medidor não encontrado ou inválido para a base fornecida');
   }
 

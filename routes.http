@@ -15,7 +15,7 @@ GET {{baseUrl}}/clientes/1
 ###
 
 # @name get-status
-GET {{baseUrl}}/status/P/1/1
+GET {{baseUrl}}/status/1/M
 
 ###
 

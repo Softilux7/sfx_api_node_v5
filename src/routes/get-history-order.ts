@@ -6,7 +6,9 @@ import { BadRequest } from './_errors/bad-request';
 
 
 export async function getHistoryOrders(app: FastifyInstance) {
-    app.withTypeProvider<ZodTypeProvider>().get('/history/orders/:idBase/:cdequipamento', {
+    app
+    .withTypeProvider<ZodTypeProvider>()
+    .get('/history/orders/:idBase/:cdequipamento', {
         schema: {
             params: z.object({
                 idBase: z.coerce.number(),
@@ -15,11 +17,8 @@ export async function getHistoryOrders(app: FastifyInstance) {
         },
     }, async (request) => {
         const { idBase, cdequipamento } = request.params;
-        const ordersHistory = await getOrdersHistory(idBase, cdequipamento);
 
-        if (!ordersHistory.length) {
-            throw new BadRequest ('Nenhum chamado encontrado') 
-        }
+        const ordersHistory = await getOrdersHistory(idBase, cdequipamento);
 
         return { success: true, data: ordersHistory };
     });

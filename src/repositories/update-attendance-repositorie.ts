@@ -1,6 +1,15 @@
 import { BadRequest } from "../routes/_errors/bad-request";
 import { prisma } from "../lib/prisma";
 import dayjs from "dayjs";
+import { calcularAtendimentoCaso30 } from "../functions/calc-attendance";
+
+interface Tecnico {
+    VALHRATENDIMENTO: number;
+    VALKMATENDIMENTO: number;
+    TFCOBRARHRCHEIA: boolean;
+    TFCOBRARTEMPOVIAGEM: boolean;
+    CDFORNECEDOR: number;
+  }
 
 export async function updateAttendance(
     id: number,
@@ -8,7 +17,7 @@ export async function updateAttendance(
     progress: number,
     params: {
         KMINICIAL?: number | undefined;
-        ID_TECNICO?: string | undefined;
+        NMATENDENTE?: string | undefined;
         VALFINANCEIRO?: string | undefined;
         VALESTACIONAMENTO?: number | undefined;
         VALPEDAGIO?: number | undefined;
@@ -33,6 +42,7 @@ export async function updateAttendance(
         CDSTATUS?: string | undefined;
         STATUS?: string | undefined;
         SEQOS?: number | undefined
+        DESTINO_POS_ATENDIMENTO_APP?: number | undefined
     }
 ) {
 
@@ -40,7 +50,7 @@ export async function updateAttendance(
     switch (progress) {
         case 2:
 
-        //## COMEÇAR VIAGEM ##
+        // Começar viagem
         await prisma.$executeRaw`
         UPDATE atendimentos
         SET ANDAMENTO_CHAMADO_APP = 2, HRVIAGEMINI = ${params.HRVIAGEMINI}
@@ -125,8 +135,6 @@ export async function updateAttendance(
                 throw new BadRequest('Não foi possível atualizar o progresso [6]');
             }
 
-            console.log(updatedInAttendance[0], "## CASE INICIAR ATENDIMENTO ##");
-
             return updatedInAttendance[0];
 
 
@@ -162,8 +170,6 @@ export async function updateAttendance(
                 throw new BadRequest('Não foi possível atualizar o progresso [8]');
             }
 
-            console.log(updatedFinishAttendance[0], "## CASE FINALIZAR ATENDIMENTO ##");
-
             return updatedFinishAttendance[0];
 
         case 10:
@@ -181,7 +187,6 @@ export async function updateAttendance(
                 NOME_CONTATO = ${params.NOME_CONTATO},
                 CDMEDIDOR = ${params.CDMEDIDOR},
                 MEDIDOR = ${params.MEDIDOR},
-                HRVIAGEMFIN = ${params.HRVIAGEMFIN},
                 HRATENDIMENTOFIN = ${params.HRATENDIMENTOFIN},
                 ANDAMENTO_CHAMADO_APP = 10
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
@@ -214,6 +219,8 @@ export async function updateAttendance(
             const HRATENDIMENTOINI = dayjs(params.HRATENDIMENTO).format('HH:mm:ss');
             const HRATENDIMENTOFIN = dayjs(params.HRATENDIMENTOFIN).format('HH:mm:ss');
 
+            console.log(HRATENDIMENTOINI, HRATENDIMENTOFIN, "## hora ini e fim ##")
+
             // Função para calcular o tempo de atendimento em minutos
             const getTimeService = (start: string, end: string) => {
                 const diff = dayjs(`1970-01-01T${end}`).diff(dayjs(`1970-01-01T${start}`), 'minute');
@@ -222,11 +229,13 @@ export async function updateAttendance(
 
             const TEMPOATENDIMENTO = getTimeService(HRATENDIMENTOINI, HRATENDIMENTOFIN);
 
+            console.log(TEMPOATENDIMENTO, "## TEMPO ATENDIMENTO ##")
+
             // Atualiza a tabela atendimentos
             await prisma.$executeRaw`
                 UPDATE atendimentos
                 SET 
-                    HRATENDIMENTOINI = ${HRATENDIMENTOINI},
+                    HRATENDIMENTO = ${HRATENDIMENTOINI},
                     HRATENDIMENTOFIN = ${HRATENDIMENTOFIN},
                     TEMPOATENDIMENTO = ${TEMPOATENDIMENTO},
                     ANDAMENTO_CHAMADO_APP = 11
@@ -250,69 +259,27 @@ export async function updateAttendance(
             break;
 
         case 30:
-        // Formata os horários de início e fim da viagem no formato HH:mm:ss
-        const HRVIAGEMINI = dayjs(params.HRVIAGEMINI).format('HH:mm:ss');
-        const HRVIAGEMFIN = dayjs(params.HRVIAGEMFIN).format('HH:mm:ss');
+            try {
+                // Chamar a função e aguardar os cálculos
+                const { TEMPOVIAGEM, VALATENDIMENTO, VALKM } = await calcularAtendimentoCaso30(id, ID_BASE, params.KMFINAL);
 
-        // Função para calcular o tempo de viagem e formatar como HH:mm
-        const getTimeServiceFormatted = (start: string, end: string) => {
-            const diffMinutes = dayjs(`1970-01-01T${end}`).diff(dayjs(`1970-01-01T${start}`), 'minute');
-            const hours = Math.floor(diffMinutes / 60);
-            const minutes = diffMinutes % 60;
-            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-        };
-
-        const TEMPOVIAGEM = getTimeServiceFormatted(HRVIAGEMINI, HRVIAGEMFIN);
-
-        // Busca informações do técnico para cálculo do valor do atendimento
-        const tecnico = await prisma.$queryRaw`
-            SELECT TARIFA_HORA, COBRANCA_HORA_CHEIA, COBRANCA_TEMPO_VIAGEM, VALOR_KM
-            FROM tecnicos
-            WHERE ID_TECNICO = ${params.ID_TECNICO}
-        `;
-
-        if (!tecnico) {
-            throw new BadRequest('Não foi possível obter informações do técnico.');
-        }
-
-        const { TARIFA_HORA, COBRANCA_HORA_CHEIA, COBRANCA_TEMPO_VIAGEM, VALOR_KM } = tecnico;
-
-        // Calcula o valor do atendimento
-        let VALATENDIMENTO = 0;
-        if (COBRANCA_HORA_CHEIA || COBRANCA_TEMPO_VIAGEM) {
-            const tempoAtendimentoMinutos = dayjs(`1970-01-01T${params.TEMPOATENDIMENTO}`).diff(dayjs('1970-01-01T00:00:00'), 'minute');
-            const horasCobradas = COBRANCA_HORA_CHEIA ? Math.ceil(tempoAtendimentoMinutos / 60) : tempoAtendimentoMinutos / 60;
-            VALATENDIMENTO = horasCobradas * TARIFA_HORA;
-        }
-
-        // Calcula o valor da quilometragem, se aplicável
-        let VALKM = 0;
-        if (params.KMINICIAL && params.KMFINAL && VALOR_KM) {
-            const distancia = Math.max(0, params.KMFINAL - params.KMINICIAL);
-            VALKM = distancia * VALOR_KM;
-        }
-
-        // Atualiza a tabela atendimentos com os valores calculados
-        const concludeAttendance = await prisma.$queryRaw`
-            UPDATE atendimentos
-            SET HRVIAGEMINI = ${HRVIAGEMINI},
-                HRVIAGEMFIN = ${HRVIAGEMFIN},
-                TEMPOVIAGEM = ${TEMPOVIAGEM},
-                VALATENDIMENTO = ${VALATENDIMENTO},
-                VALKM = ${VALKM},
-                ANDAMENTO_CHAMADO_APP = 30
-            WHERE id = ${id} AND ID_BASE = ${ID_BASE}
-        `;
-
-        console.log(concludeAttendance, "## PROGRESSO 30 ATUALIZADO ##");
-
-        if (!concludeAttendance) {
-            throw new BadRequest('Não foi possível atualizar o progresso [30]');
-        }
-
-        return concludeAttendance;
-
-
+                console.log( TEMPOVIAGEM, VALATENDIMENTO, VALKM, "## DADOS PÓS CÁLCULO ##")
+        
+                // Atualizar o atendimento com os novos valores calculados
+                await prisma.$executeRaw`
+                    UPDATE atendimentos 
+                    SET TEMPOVIAGEM = ${TEMPOVIAGEM}, VALATENDIMENTO = ${VALATENDIMENTO}, VALKM = ${VALKM} 
+                    WHERE id = ${id}
+                `;
+        
+                console.log("Atendimento atualizado com sucesso:", { TEMPOVIAGEM, VALATENDIMENTO, VALKM });
+        
+            } catch (error) {
+                console.error("Erro ao calcular atendimento caso 30:", error);
+            }
+        break;
+        
+                
         default:
             throw new BadRequest('Progresso inválido.');
     }

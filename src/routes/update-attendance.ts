@@ -41,6 +41,8 @@ export async function updateAtendimento(app: FastifyInstance) {
               SEQOS: z.number().optional(),
               CDSTATUS: z.string().optional(),
               STATUS: z.string().optional(),
+              NMATENDENTE: z.string().optional(),
+              DESTINO_POS_ATENDIMENTO_APP: z.number().optional(),
             }),
           }),
         },

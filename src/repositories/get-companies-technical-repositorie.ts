@@ -10,11 +10,9 @@ export async function getCompaniesByTechnical(tecnicoId: string, idBase: number)
       AND empresa_id = ${idBase}
     LIMIT 1`;
 
-  if (!tecnico.length) {
+  if (tecnico.length === 0) {
     throw new BadRequest('Técnico não encontrado ou inválido para a base fornecida.');
   }
-
-  console.log(tecnico, "## TECNICO ##");
 
   // Busca as empresas vinculadas ao técnico
   const empresas = await prisma.$queryRaw<{ empresa_id: number }[]>`

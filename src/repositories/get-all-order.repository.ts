@@ -11,7 +11,7 @@ export async function getAllOrdersRepository(idTecnico: string, idBase: number, 
       pi.QUANTIDADE, pi.CDPRODUTO, p.NMPRODUTO, emp.empresa_fantasia
     FROM chamados c
     LEFT JOIN equipamentos e ON c.CDEQUIPAMENTO = e.CDEQUIPAMENTO AND e.ID_BASE = ${idBase}
-    LEFT JOIN chamados_itens pi ON c.SEQOS = pi.SEQOS AND pi.ID_BASE = ${idBase} AND pi.TFPENDENTE = 'S'
+    LEFT JOIN chamados_itens pi ON c.SEQOS = pi.SEQOS AND pi.ID_BASE = ${idBase}
     LEFT JOIN produtos p ON pi.CDPRODUTO = p.CDPRODUTO
     LEFT JOIN empresas emp ON c.empresa_id = emp.id
     WHERE c.NMSUPORTET = ${idTecnico}
@@ -29,7 +29,7 @@ export async function getAllOrdersRepository(idTecnico: string, idBase: number, 
             existingOrder = {
                 sequence: chamado.id,
                 seqos: chamado.SEQOS,
-                openDate: chamado.DTINCLUSAO?.toISOString() || null,
+                openDate: chamado.DTINCLUSAO || null,
                 status: chamado.STATUS,
                 cdstatus: chamado.CDSTATUS,
                 cdempresa: chamado.empresa_id,

@@ -1,28 +1,30 @@
 import { prisma } from '../lib/prisma';
 import { getCompaniesByTechnical } from './get-companies-technical-repositorie';
+import { Prisma } from '@prisma/client';
 
 export async function getResumoChamadosRepository(tecnicoId: string, idBase: number) {
     // Obtém as empresas vinculadas ao técnico
     const empresas = await getCompaniesByTechnical(tecnicoId, idBase);
 
+    // Verifica se alguma empresa foi encontrada
     if (empresas.length === 0) {
         return { success: false, message: 'Nenhuma empresa encontrada para o técnico fornecido.' };
     }
 
-    // Converte o array de empresas para uma string formatada para SQL (ex: "1,2,3")
-    const empresasIds = empresas.join(',');
+    // Cria um array de placeholders para o IN()
+    const empresasList = Prisma.join(empresas);
 
     // Consulta os chamados
-    const resumoChamados = await prisma.$queryRaw<{ STATUS: string; total: number }[]>`
+    const resumoChamados = await prisma.$queryRaw<{ STATUS: string; total: number }[]>(
+        Prisma.sql`
         SELECT STATUS, COUNT(*) AS total
         FROM chamados
         WHERE ID_BASE = ${idBase}
-          AND empresa_id IN (${empresasIds}) 
+          AND empresa_id IN (${empresasList})
           AND TFLIBERADO = 'S'
           AND NMSUPORTET = ${tecnicoId}
-        GROUP BY STATUS`;
-
-    console.log(resumoChamados, "## RESUMO CHAMADOS ##");
+        GROUP BY STATUS`
+    );
 
     // Mapeia os STATUS para o formato desejado e converte BigInt para Number
     const result = resumoChamados.reduce((acc, chamado) => {

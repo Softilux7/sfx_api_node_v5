@@ -1,14 +1,14 @@
 import { prisma } from '../lib/prisma';
 
-export async function getStatusRepository(type: string, idEmpresa: number, idBase: number) {
+export async function getStatusRepository(type: string, idEmpresa: number) {
   const status = await prisma.$queryRaw<{ NMSTATUS: string }[]>`
     SELECT 
     CDSTATUS,
-    NMSTATUS 
+    NMSTATUS,
+    TIPO    
     FROM status 
     WHERE TIPO = ${type} 
-      AND empresa_id = ${idEmpresa} 
-      AND ID_BASE = ${idBase} 
+      AND ID_BASE = ${idEmpresa} 
       AND TFINATIVO = 'N'
   `;
 
