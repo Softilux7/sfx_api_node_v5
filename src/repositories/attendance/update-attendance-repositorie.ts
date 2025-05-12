@@ -1,15 +1,7 @@
-import { BadRequest } from "../routes/_errors/bad-request";
-import { prisma } from "../lib/prisma";
 import dayjs from "dayjs";
-import { calcularAtendimentoCaso30 } from "../functions/calc-attendance";
-
-interface Tecnico {
-    VALHRATENDIMENTO: number;
-    VALKMATENDIMENTO: number;
-    TFCOBRARHRCHEIA: boolean;
-    TFCOBRARTEMPOVIAGEM: boolean;
-    CDFORNECEDOR: number;
-  }
+import { calcularAtendimentoCaso30 } from "../../functions/calc-attendance";
+import { prisma } from "../../lib/prisma";
+import { BadRequest } from "../../routes/_errors/bad-request";
 
 export async function updateAttendance(
     id: number,
@@ -17,17 +9,13 @@ export async function updateAttendance(
     progress: number,
     params: {
         KMINICIAL?: number | undefined;
-        NMATENDENTE?: string | undefined;
-        VALFINANCEIRO?: string | undefined;
         VALESTACIONAMENTO?: number | undefined;
         VALPEDAGIO?: number | undefined;
         VALOUTRASDESP?: number | undefined;
-        QUILOMETRAGEM?: number | undefined;
         CDMEDIDOR?: string | undefined;
         MEDIDOR?: number | undefined;
         HRATENDIMENTOFIN?: string | undefined;
         HRATENDIMENTO?: string | undefined;
-        TEMPOATENDIMENTO?: number | undefined;
         DTVIAGEMFIN?: Date | undefined;
         DTVIAGEMINI?: Date | undefined;
         HRVIAGEMINI?: string | undefined;
@@ -187,7 +175,6 @@ export async function updateAttendance(
                 NOME_CONTATO = ${params.NOME_CONTATO},
                 CDMEDIDOR = ${params.CDMEDIDOR},
                 MEDIDOR = ${params.MEDIDOR},
-                HRATENDIMENTOFIN = ${params.HRATENDIMENTOFIN},
                 ANDAMENTO_CHAMADO_APP = 10
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `;
@@ -214,29 +201,32 @@ export async function updateAttendance(
 
         case 11:
             // Assinatura concluída
+            const response: any[] = await prisma.$queryRaw`
+            SELECT HRATENDIMENTO FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
+
+            if (response.length === 0) {
+                throw new BadRequest('Não foi possível atualizar o progresso [10]');
+            }
 
             // Formata os horários recebidos no padrão HH:mm:ss
-            const HRATENDIMENTOINI = dayjs(params.HRATENDIMENTO).format('HH:mm:ss');
+            const HRATENDIMENTOINI = dayjs.utc(response[0].HRATENDIMENTO).format('HH:mm:ss');
             const HRATENDIMENTOFIN = dayjs(params.HRATENDIMENTOFIN).format('HH:mm:ss');
 
-            console.log(HRATENDIMENTOINI, HRATENDIMENTOFIN, "## hora ini e fim ##")
+            const getTimeService = (start: string, end: string): number => {
+                const startTime = dayjs(`1970-01-01T${start}`);
+                const endTime = dayjs(`1970-01-01T${end}`);
 
-            // Função para calcular o tempo de atendimento em minutos
-            const getTimeService = (start: string, end: string) => {
-                const diff = dayjs(`1970-01-01T${end}`).diff(dayjs(`1970-01-01T${start}`), 'minute');
-                return Math.max(0, diff); // Evita valores negativos
+                const diffInMinutes = endTime.diff(startTime, 'minute');
+                return diffInMinutes;
             };
 
             const TEMPOATENDIMENTO = getTimeService(HRATENDIMENTOINI, HRATENDIMENTOFIN);
-
-            console.log(TEMPOATENDIMENTO, "## TEMPO ATENDIMENTO ##")
 
             // Atualiza a tabela atendimentos
             await prisma.$executeRaw`
                 UPDATE atendimentos
                 SET 
-                    HRATENDIMENTO = ${HRATENDIMENTOINI},
-                    HRATENDIMENTOFIN = ${HRATENDIMENTOFIN},
                     TEMPOATENDIMENTO = ${TEMPOATENDIMENTO},
                     ANDAMENTO_CHAMADO_APP = 11
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
@@ -256,23 +246,65 @@ export async function updateAttendance(
 
         case 15:
             // Atendimento Cancelado
-            break;
+            //TODO: ATUALIZAR ORDEM DE SERVIÇO PARA DESPACHADO
+            await prisma.$executeRaw`
+            UPDATE atendimentos
+            SET 
+                ANDAMENTO_CHAMADO_APP = 15,
+                DTVIAGEMFIN = ${params.DTVIAGEMFIN},
+                HRVIAGEMFIN = ${params.HRVIAGEMFIN},
+                TFVISITA = 'S'
+            WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
+
+            const cancelAttendance: any[] = await prisma.$queryRaw`
+                SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
+
+            if (!cancelAttendance || cancelAttendance.length === 0) {
+                throw new BadRequest('Não foi possível atualizar o progresso [4]');
+            }
+
+            // await prisma.$executeRaw`
+            // UPDATE chamados
+            // SET 
+                
+            //     SEQOS = ${params.SEQOS},
+            //     STATUS = 'E',
+            //     HRVIAGEMFIN = ${params.HRVIAGEMFIN},
+            //     TFVISITA = 'S'
+            // WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            // `;
+
+            console.log(cancelAttendance[0], "## ATENDIMENTO CANCELADO ##");
+
+            return cancelAttendance[0];
 
         case 30:
             try {
                 // Chamar a função e aguardar os cálculos
                 const { TEMPOVIAGEM, VALATENDIMENTO, VALKM } = await calcularAtendimentoCaso30(id, ID_BASE, params.KMFINAL);
-
-                console.log( TEMPOVIAGEM, VALATENDIMENTO, VALKM, "## DADOS PÓS CÁLCULO ##")
         
                 // Atualizar o atendimento com os novos valores calculados
                 await prisma.$executeRaw`
-                    UPDATE atendimentos 
-                    SET TEMPOVIAGEM = ${TEMPOVIAGEM}, VALATENDIMENTO = ${VALATENDIMENTO}, VALKM = ${VALKM} 
-                    WHERE id = ${id}
+                UPDATE atendimentos 
+                SET TEMPOVIAGEM = ${TEMPOVIAGEM}, 
+                    VALATENDIMENTO = ${VALATENDIMENTO}, 
+                    VALKM = ${VALKM}, 
+                    ANDAMENTO_CHAMADO_APP = 30 
+                WHERE ID_BASE = ${ID_BASE} AND id = ${id};
                 `;
-        
-                console.log("Atendimento atualizado com sucesso:", { TEMPOVIAGEM, VALATENDIMENTO, VALKM });
+
+                // Buscar os dados atualizados
+                const updatedAttendance: any[] = await prisma.$queryRaw`
+                SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+                `;
+
+                if (!updatedAttendance || updatedAttendance.length === 0) {
+                    throw new BadRequest('Não foi possível atualizar o progresso [11]');
+                }
+
+                return updatedAttendance[0];
         
             } catch (error) {
                 console.error("Erro ao calcular atendimento caso 30:", error);

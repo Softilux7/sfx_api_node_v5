@@ -1,4 +1,5 @@
-import { prisma } from '../lib/prisma';
+import { prisma } from "../../lib/prisma";
+
 
 export async function getAttendanceHistory(ID_BASE: number, idChamado: number) {
     const attendanceDetails = await prisma.$queryRaw<

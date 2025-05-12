@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { getResumoChamadosRepository } from '../repositories/get-service-order-resume';
+import { getResumoChamadosRepository } from '../repositories/orders/get-service-order-resume';
 
 export async function getResumoChamados(app: FastifyInstance) {
     app

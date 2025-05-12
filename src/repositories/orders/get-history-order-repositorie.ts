@@ -1,4 +1,5 @@
-import { prisma } from '../lib/prisma';
+import { prisma } from "../../lib/prisma";
+
 
 export async function getOrdersHistory(idBase: number, cdequipamento: number) {
     return prisma.$queryRaw<

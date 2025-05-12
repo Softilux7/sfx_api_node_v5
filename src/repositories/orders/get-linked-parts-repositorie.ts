@@ -1,4 +1,5 @@
-import { prisma } from '../lib/prisma';
+import { prisma } from "../../lib/prisma";
+
 
 export async function getLinkedParts(idBase: number, seqOs: number) {
 

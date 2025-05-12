@@ -1,5 +1,5 @@
-import { prisma } from '../lib/prisma';
-import { BadRequest } from '../routes/_errors/bad-request';
+import { prisma } from '../../lib/prisma';
+import { BadRequest } from '../../routes/_errors/bad-request';
 
 export async function getTypeCounters(idBase: number, cdEquipamento: number) {
   const contractCounters = await prisma.$queryRaw<{ CDMEDIDOR: number }[]>`

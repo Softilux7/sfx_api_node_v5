@@ -1,6 +1,6 @@
-import { prisma } from '../lib/prisma';
-import { getCompaniesByTechnical } from './get-companies-technical-repositorie';
+import { prisma } from '../../lib/prisma';
 import { Prisma } from '@prisma/client';
+import { getCompaniesByTechnical } from '../companies/get-companies-technical-repositorie';
 
 export async function getResumoChamadosRepository(tecnicoId: string, idBase: number) {
     // Obtém as empresas vinculadas ao técnico
@@ -11,19 +11,18 @@ export async function getResumoChamadosRepository(tecnicoId: string, idBase: num
         return { success: false, message: 'Nenhuma empresa encontrada para o técnico fornecido.' };
     }
 
-    // Cria um array de placeholders para o IN()
-    const empresasList = Prisma.join(empresas);
-
     // Consulta os chamados
     const resumoChamados = await prisma.$queryRaw<{ STATUS: string; total: number }[]>(
         Prisma.sql`
         SELECT STATUS, COUNT(*) AS total
         FROM chamados
         WHERE ID_BASE = ${idBase}
-          AND empresa_id IN (${empresasList})
+          AND empresa_id IN (${Prisma.join(empresas)})
           AND TFLIBERADO = 'S'
           AND NMSUPORTET = ${tecnicoId}
-        GROUP BY STATUS`
+        GROUP BY STATUS
+        ORDER BY total DESC
+        LIMIT 30`
     );
 
     // Mapeia os STATUS para o formato desejado e converte BigInt para Number

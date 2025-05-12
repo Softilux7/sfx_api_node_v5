@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { getTypeCounters } from '../repositories/get-type-counters-repositorie'
+import { getTypeCounters } from '../repositories/equipments/get-type-counters-repositorie'
 
 export async function listTypeCounters(app: FastifyInstance) {
   app

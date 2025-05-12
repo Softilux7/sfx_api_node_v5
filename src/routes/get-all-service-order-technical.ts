@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import z from "zod";
-import { getAllOrdersRepository } from "../repositories/get-all-order.repository";
+import { getAllOrdersRepository } from "../repositories/orders/get-all-order.repository";
 
 export async function getAllServiceOrderTechnical(app: FastifyInstance) {
   app

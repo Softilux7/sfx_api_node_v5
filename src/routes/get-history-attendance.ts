@@ -1,8 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { getAttendanceHistory } from '../repositories/get-history-attendance-repositorie';
-import { BadRequest } from './_errors/bad-request';
+import { getAttendanceHistory } from '../repositories/attendance/get-history-attendance-repositorie';
 
 export async function getHistoryAttendance(app: FastifyInstance) {
     app.withTypeProvider<ZodTypeProvider>().get('/history/attendance/:ID_BASE/:idChamado', {

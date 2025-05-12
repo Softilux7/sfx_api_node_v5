@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { listAllEquipmentMeters } from '../repositories/get-all-equipment-meters-repositorie'
+import { listAllEquipmentMeters } from '../repositories/equipments/get-all-equipment-meters-repositorie'
 
 // Faz uma busca pelos medidores dos equipamentos
 // Rota utilizada no modal de medidores app formulário

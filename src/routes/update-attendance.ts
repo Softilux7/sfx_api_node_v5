@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { BadRequest } from './_errors/bad-request';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { updateAttendance } from '../repositories/update-attendance-repositorie';
+import { updateAttendance } from '../repositories/attendance/update-attendance-repositorie';
 
 export async function updateAtendimento(app: FastifyInstance) {
   app

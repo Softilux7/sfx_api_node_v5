@@ -1,4 +1,4 @@
-import { prisma } from '../lib/prisma';
+import { prisma } from "../../lib/prisma";
 
 export async function getStatusRepository(type: string, idEmpresa: number) {
   const status = await prisma.$queryRaw<{ NMSTATUS: string }[]>`

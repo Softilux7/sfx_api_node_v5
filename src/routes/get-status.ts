@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { getStatusRepository } from '../repositories/get-status-repositorie';
+import { getStatusRepository } from '../repositories/orders/get-status-repositorie';
 
 export async function getStatus(app: FastifyInstance) {
   app

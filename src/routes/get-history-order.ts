@@ -1,8 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { getOrdersHistory } from '../repositories/get-history-order-repositorie';
-import { BadRequest } from './_errors/bad-request';
+import { getOrdersHistory } from '../repositories/orders/get-history-order-repositorie';
 
 
 export async function getHistoryOrders(app: FastifyInstance) {

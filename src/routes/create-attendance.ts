@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import dayjs from 'dayjs';
 import { BadRequest } from './_errors/bad-request';
-import { updateOrder } from '../repositories/update-order-repositorie';
+import { updateOrder } from '../repositories/orders/update-order-repositorie';
 
 export async function createAtendimento(app: FastifyInstance) {
 
@@ -19,7 +19,7 @@ export async function createAtendimento(app: FastifyInstance) {
             CDSTATUS: z.string(),
             STATUS: z.string(),
             NMATENDENTE: z.string().max(10),
-            OBSERVACAO: z.string().max(200),
+            OBSERVACAO: z.string().max(600),
             chamado_id: z.number(),
             empresa_id: z.coerce.number(),
             ID_BASE: z.coerce.number(),
@@ -47,7 +47,6 @@ export async function createAtendimento(app: FastifyInstance) {
           KMINICIAL,
           PLACAVEICULO,
           ANDAMENTO_CHAMADO_APP,
-          ORIGEM_CADASTRO,
           granted_geolocation,
           DESLOCAMENTO_APP = 0,
         } = request.body;
@@ -74,7 +73,7 @@ export async function createAtendimento(app: FastifyInstance) {
               PLACAVEICULO,
               ANDAMENTO_CHAMADO_APP,
               DTATENDIMENTO,
-              ORIGEM_CADASTRO: ORIGEM_CADASTRO || '',
+              ORIGEM_CADASTRO: 'APP',
               granted_geolocation,
               DESLOCAMENTO_APP,
               DTMEDIDORDESC: null,
