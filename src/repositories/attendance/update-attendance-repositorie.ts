@@ -2,12 +2,16 @@ import dayjs from "dayjs";
 import { calcularAtendimentoCaso30 } from "../../functions/calc-attendance";
 import { prisma } from "../../lib/prisma";
 import { BadRequest } from "../../routes/_errors/bad-request";
+import { addTimeLine } from "../../functions/add-timeline";
 
 export async function updateAttendance(
     id: number,
     ID_BASE: number,
     progress: number,
     params: {
+        MOTIVO_PAUSA?: string | undefined,
+        LATITUDE?: number | undefined,
+        LONGITUDE?: number | undefined,
         KMINICIAL?: number | undefined;
         VALESTACIONAMENTO?: number | undefined;
         VALPEDAGIO?: number | undefined;
@@ -43,33 +47,75 @@ export async function updateAttendance(
         UPDATE atendimentos
         SET ANDAMENTO_CHAMADO_APP = 2, HRVIAGEMINI = ${params.HRVIAGEMINI}
         WHERE id = ${id} AND ID_BASE = ${ID_BASE}`;
-        
-        // Seleciona o atendimento atualizado
-        const updatedAtendimento: any[] = await prisma.$queryRaw`
+
+            // Seleciona o atendimento atualizado
+            const updatedAtendimento: any[] = await prisma.$queryRaw`
             SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}`;
-        
-        if (updatedAtendimento.length === 0) {
-            throw new BadRequest('Não foi possível atualizar o progresso [2]');
-        }
-        
-        return updatedAtendimento[0];
+
+            if (updatedAtendimento.length === 0) {
+                throw new BadRequest('Não foi possível atualizar o progresso [2]');
+            }
+
+            // Adicione registro à timeline
+            await addTimeLine({
+                id_atendimento: id,
+                andamento_chamado_snapshot: "2",
+                tipo_time_line: "1",
+                address: '',
+                latitute: params.LATITUDE,
+                longitute: params.LONGITUDE,
+                location_captured: 1,
+                motivo: '',
+                motivo_outros: '',
+                id_tecnico: '',
+                id_transaction: 2,
+                ID_BASE: updatedAtendimento[0].ID_BASE,
+                empresa_id: updatedAtendimento[0].empresa_id,
+                create_at: new Date(),
+            });
+
+
+            return updatedAtendimento[0];
 
         case 3:
-            // PAUSA -  Antes de chegar cliente
-            const pauseBeforeClient = await prisma.$executeRaw`
+            // PAUSA - ANTES de chegada no cliente
+            await prisma.$executeRaw`
                 UPDATE atendimentos
                 SET ANDAMENTO_CHAMADO_APP = 3
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `;
 
-            if (!pauseBeforeClient) {
-                throw new BadRequest('Não foi possível atualizar o progresso [3]')
+            // Seleciona o atendimento atualizado
+            const pauseBeforeClient: any[] = await prisma.$queryRaw`
+                SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}`;
+
+            if (pauseBeforeClient.length === 0) {
+                throw new BadRequest('Não foi possível atualizar o progresso [2]');
             }
+
+            // Adicione registro à timeline
+            await addTimeLine({
+                id_atendimento: id,
+                andamento_chamado_snapshot: "3",
+                tipo_time_line: "1",
+                address: '',
+                latitute: params.LATITUDE,
+                longitute: params.LONGITUDE,
+                location_captured: 1,
+                motivo: params.MOTIVO_PAUSA, //VERIFICAR O QUE SETA ESSA PROPRIEDADE sfx_app_node
+                motivo_outros: '',
+                id_tecnico: '',
+                id_transaction: 3,
+                ID_BASE: pauseBeforeClient[0].ID_BASE,
+                empresa_id: pauseBeforeClient[0].empresa_id,
+                create_at: new Date(),
+            });
+
             break;
 
         case 4:
-        // Chegada cliente
-        await prisma.$executeRaw`
+            // Chegada cliente
+            await prisma.$executeRaw`
             UPDATE atendimentos
             SET 
                 ANDAMENTO_CHAMADO_APP = 4,
@@ -79,32 +125,70 @@ export async function updateAttendance(
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `;
 
-        const updatedArrivalTrip: any[] = await prisma.$queryRaw`
+            const updatedArrivalTrip: any[] = await prisma.$queryRaw`
             SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `;
 
-        if (!updatedArrivalTrip || updatedArrivalTrip.length === 0) {
-            throw new BadRequest('Não foi possível atualizar o progresso [4]');
-        }
+            if (!updatedArrivalTrip || updatedArrivalTrip.length === 0) {
+                throw new BadRequest('Não foi possível atualizar o progresso [4]');
+            }
 
-        console.log(updatedArrivalTrip[0], "## CHEGADA CLIENTE ##");
+            // Adicione registro à timeline
+            await addTimeLine({
+                id_atendimento: id,
+                andamento_chamado_snapshot: "4",
+                tipo_time_line: "1",
+                address: '',
+                latitute: params.LATITUDE,
+                longitute: params.LONGITUDE,
+                location_captured: 1,
+                motivo: '',
+                motivo_outros: '',
+                id_tecnico: '',
+                id_transaction: 4,
+                ID_BASE: updatedArrivalTrip[0].ID_BASE,
+                empresa_id: updatedArrivalTrip[0].empresa_id,
+                create_at: new Date(),
+            });
 
-        return updatedArrivalTrip[0];
+            return updatedArrivalTrip[0];
 
 
         case 5:
-            // PAUSA
-            const pauseAfterClient = await prisma.$queryRaw`
+            // PAUSA -  DEPOIS de chegar cliente
+            await prisma.$executeRaw`
                 UPDATE atendimentos
                 SET ANDAMENTO_CHAMADO_APP = 5
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `;
 
-            if (!pauseAfterClient) {
-                throw new BadRequest('Não foi possível atualizar o progresso [5]');
+            // Seleciona o atendimento atualizado
+            const pauseAfterClient: any[] = await prisma.$queryRaw`
+                SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}`;
+
+            if (pauseAfterClient.length === 0) {
+                throw new BadRequest('Não foi possível atualizar o progresso [2]');
             }
 
-            return pauseAfterClient;
+            // Adicione registro à timeline
+            await addTimeLine({
+                id_atendimento: id,
+                andamento_chamado_snapshot: "5",
+                tipo_time_line: "1",
+                address: '',
+                latitute: params.LATITUDE,
+                longitute: params.LONGITUDE,
+                location_captured: 1,
+                motivo: params.MOTIVO_PAUSA, //VERIFICAR O QUE SETA ESSA PROPRIEDADE sfx_app_node
+                motivo_outros: '',
+                id_tecnico: '',
+                id_transaction: 5,
+                ID_BASE: pauseAfterClient[0].ID_BASE,
+                empresa_id: pauseAfterClient[0].empresa_id,
+                create_at: new Date(),
+            });
+
+            break;
 
         case 6:
             // Em Atendimento
@@ -123,22 +207,60 @@ export async function updateAttendance(
                 throw new BadRequest('Não foi possível atualizar o progresso [6]');
             }
 
+            // Adicione registro à timeline
+            await addTimeLine({
+                id_atendimento: id,
+                andamento_chamado_snapshot: "6",
+                tipo_time_line: "1",
+                address: '',
+                latitute: params.LATITUDE,
+                longitute: params.LONGITUDE,
+                location_captured: 1,
+                motivo: params.MOTIVO_PAUSA,
+                motivo_outros: '',
+                id_tecnico: '',
+                id_transaction: 6,
+                ID_BASE: updatedInAttendance[0].ID_BASE,
+                empresa_id: updatedInAttendance[0].empresa_id,
+                create_at: new Date(),
+            });
+
             return updatedInAttendance[0];
 
 
         case 7:
-            // PAUSA
-            const pauseInAttendace = await prisma.$queryRaw`
+            // PAUSA - Durante atendimento
+            await prisma.$queryRaw`
                 UPDATE atendimentos
                 SET ANDAMENTO_CHAMADO_APP = 7
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `;
 
-            console.log(pauseInAttendace, "## CASE PAUSA NO ATENDIMENTO ##");
+            const pauseInAttendace: any[] = await prisma.$queryRaw`
+                SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+            `;
 
-            if (!pauseInAttendace) {
+            if (pauseInAttendace.length === 0) {
                 throw new BadRequest('Não foi possível atualizar o progresso [7]');
             }
+
+            // Adicione registro à timeline
+            await addTimeLine({
+                id_atendimento: id,
+                andamento_chamado_snapshot: "7",
+                tipo_time_line: "1",
+                address: '',
+                latitute: params.LATITUDE,
+                longitute: params.LONGITUDE,
+                location_captured: 1,
+                motivo: params.MOTIVO_PAUSA,
+                motivo_outros: '',
+                id_tecnico: '',
+                id_transaction: 7,
+                ID_BASE: pauseInAttendace[0].ID_BASE,
+                empresa_id: pauseInAttendace[0].empresa_id,
+                create_at: new Date(),
+            });
 
             return pauseInAttendace;
 
@@ -158,11 +280,28 @@ export async function updateAttendance(
                 throw new BadRequest('Não foi possível atualizar o progresso [8]');
             }
 
+            await addTimeLine({
+                id_atendimento: id,
+                andamento_chamado_snapshot: "8",
+                tipo_time_line: "1",
+                address: '',
+                latitute: params.LATITUDE,
+                longitute: params.LONGITUDE,
+                location_captured: 1,
+                motivo: '',
+                motivo_outros: '',
+                id_tecnico: '',
+                id_transaction: 8,
+                ID_BASE: updatedFinishAttendance[0].ID_BASE,
+                empresa_id: updatedFinishAttendance[0].empresa_id,
+                create_at: new Date(),
+            });
+
             return updatedFinishAttendance[0];
 
         case 10:
-        // Formulário finalizado
-        await prisma.$executeRaw`
+            // Formulário finalizado
+            await prisma.$executeRaw`
             UPDATE atendimentos
             SET 
                 OBSERVACAO = ${params.OBSERVACAO},
@@ -179,8 +318,8 @@ export async function updateAttendance(
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `;
 
-        // Atualiza o status do chamado
-        await prisma.$executeRaw`
+            // Atualiza o status do chamado
+            await prisma.$executeRaw`
             UPDATE chamados 
             SET 
                 STATUS = ${params.STATUS},
@@ -188,19 +327,36 @@ export async function updateAttendance(
             WHERE ID_BASE = ${ID_BASE} AND SEQOS = ${params.SEQOS}
         `;
 
-        // Buscar os dados atualizados
-        const updatedFormAttendance: any[] = await prisma.$queryRaw`
+            // Buscar os dados atualizados
+            const updatedFormAttendance: any[] = await prisma.$queryRaw`
             SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `;
 
-        if (updatedFormAttendance.length === 0) {
-            throw new BadRequest('Não foi possível atualizar o progresso [10]');
-        }
+            if (updatedFormAttendance.length === 0) {
+                throw new BadRequest('Não foi possível atualizar o progresso [10]');
+            }
 
-        return updatedFormAttendance[0];
+            await addTimeLine({
+                id_atendimento: id,
+                andamento_chamado_snapshot: "10",
+                tipo_time_line: "1",
+                address: '',
+                latitute: params.LATITUDE,
+                longitute: params.LONGITUDE,
+                location_captured: 1,
+                motivo: '',
+                motivo_outros: '',
+                id_tecnico: '',
+                id_transaction: 9,
+                ID_BASE: updatedFormAttendance[0].ID_BASE,
+                empresa_id: updatedFormAttendance[0].empresa_id,
+                create_at: new Date(),
+            });
 
+            return updatedFormAttendance[0];
+
+        // Assinatura concluída
         case 11:
-            // Assinatura concluída
             const response: any[] = await prisma.$queryRaw`
             SELECT HRATENDIMENTO FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `;
@@ -241,6 +397,24 @@ export async function updateAttendance(
                 throw new BadRequest('Não foi possível atualizar o progresso [11]');
             }
 
+            await addTimeLine({
+                id_atendimento: id,
+                andamento_chamado_snapshot: "11",
+                tipo_time_line: "1",
+                address: '',
+                latitute: params.LATITUDE,
+                longitute: params.LONGITUDE,
+                location_captured: 1,
+                motivo: '',
+                motivo_outros: '',
+                id_tecnico: '',
+                id_transaction: 10,
+                ID_BASE: updatedAttendance[0].ID_BASE,
+                empresa_id: updatedAttendance[0].empresa_id,
+                create_at: new Date(),
+            });
+
+
             return updatedAttendance[0];
 
 
@@ -253,7 +427,7 @@ export async function updateAttendance(
                 ANDAMENTO_CHAMADO_APP = 15,
                 DTVIAGEMFIN = ${params.DTVIAGEMFIN},
                 HRVIAGEMFIN = ${params.HRVIAGEMFIN},
-                TFVISITA = 'S'
+                TFVISITA = 'N'
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `;
 
@@ -265,33 +439,21 @@ export async function updateAttendance(
                 throw new BadRequest('Não foi possível atualizar o progresso [4]');
             }
 
-            // await prisma.$executeRaw`
-            // UPDATE chamados
-            // SET 
-                
-            //     SEQOS = ${params.SEQOS},
-            //     STATUS = 'E',
-            //     HRVIAGEMFIN = ${params.HRVIAGEMFIN},
-            //     TFVISITA = 'S'
-            // WHERE id = ${id} AND ID_BASE = ${ID_BASE}
-            // `;
-
-            console.log(cancelAttendance[0], "## ATENDIMENTO CANCELADO ##");
-
             return cancelAttendance[0];
 
         case 30:
             try {
                 // Chamar a função e aguardar os cálculos
                 const { TEMPOVIAGEM, VALATENDIMENTO, VALKM } = await calcularAtendimentoCaso30(id, ID_BASE, params.KMFINAL);
-        
+
                 // Atualizar o atendimento com os novos valores calculados
                 await prisma.$executeRaw`
                 UPDATE atendimentos 
                 SET TEMPOVIAGEM = ${TEMPOVIAGEM}, 
                     VALATENDIMENTO = ${VALATENDIMENTO}, 
                     VALKM = ${VALKM}, 
-                    ANDAMENTO_CHAMADO_APP = 30 
+                    ANDAMENTO_CHAMADO_APP = 30, 
+                    TFVISITA= 'S'
                 WHERE ID_BASE = ${ID_BASE} AND id = ${id};
                 `;
 
@@ -304,14 +466,50 @@ export async function updateAttendance(
                     throw new BadRequest('Não foi possível atualizar o progresso [11]');
                 }
 
+                await addTimeLine({
+                    id_atendimento: id,
+                    andamento_chamado_snapshot: "30",
+                    tipo_time_line: "1",
+                    address: '',
+                    latitute: params.LATITUDE,
+                    longitute: params.LONGITUDE,
+                    location_captured: 1,
+                    motivo: '',
+                    motivo_outros: '',
+                    id_tecnico: '',
+                    id_transaction: 11,
+                    ID_BASE: updatedAttendance[0].ID_BASE,
+                    empresa_id: updatedAttendance[0].empresa_id,
+                    create_at: new Date(),
+                });
+
                 return updatedAttendance[0];
-        
+
             } catch (error) {
                 console.error("Erro ao calcular atendimento caso 30:", error);
             }
-        break;
-        
-                
+            break;
+
+        case 31:
+            // Retorno pós atendimento
+            await prisma.$executeRaw`
+            UPDATE atendimentos
+            SET 
+                HRVIAGEMFIN = ${params.HRVIAGEMFIN},
+                KMFINAL = ${params.KMFINAL}
+            WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+        `;
+
+            const returnBack: any[] = await prisma.$queryRaw`
+            SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+        `;
+
+            if (!returnBack || returnBack.length === 0) {
+                throw new BadRequest('Não foi possível atualizar o progresso [31]');
+            }
+
+            return returnBack[0];
+
         default:
             throw new BadRequest('Progresso inválido.');
     }

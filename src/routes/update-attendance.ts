@@ -17,6 +17,9 @@ export async function updateAtendimento(app: FastifyInstance) {
             progress: z.number(), // Progresso atual do atendimento
             ID_BASE: z.coerce.number(),
             params: z.object({
+              MOTIVO_PAUSA: z.string().optional(),
+              LATITUDE: z.number().optional(),
+              LONGITUDE: z.number().optional(),
               VALFINANCEIRO: z.string().optional(),
               VALESTACIONAMENTO: z.number().optional(),
               VALPEDAGIO: z.number().optional(),
@@ -70,7 +73,7 @@ export async function updateAtendimento(app: FastifyInstance) {
           });
         } catch (error: any) {
           console.error('Erro ao atualizar atendimento:', error.message);
-          return reply.status(500).send({ success: false, message: error.message });
+          return reply.status(400).send({ success: false, message: error.message });
         }
       }
     );

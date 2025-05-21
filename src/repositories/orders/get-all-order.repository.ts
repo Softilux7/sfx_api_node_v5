@@ -1,13 +1,14 @@
 import { prisma } from "../../lib/prisma";
 
 
-export async function getAllOrdersRepository(idTecnico: string, idBase: number, status: string) {
+export async function getAllOrdersRepository(idTecnico: string, idBase: number, status: string, seqos?: number) {
 
     // Monta a base da query
     let query = `
     SELECT 
     c.id, c.CDEMPRESA, c.empresa_id, c.SEQOS, c.STATUS, c.CDSTATUS, c.SEQCONTRATO, c.CDEQUIPAMENTO,
-    c.CDCLIENTE, c.NMCLIENTE, c.ENDERECO, c.CIDADE, c.BAIRRO, c.UF, c.CEP, c.NUM, c.CONTATO, c.DTINCLUSAO, c.HRINCLUSAO, c.DTPREVENTREGA, c.HRPREVENTREGA, c.DTATENDIMENTO,
+    c.CDCLIENTE, c.NMCLIENTE, c.ENDERECO, c.CIDADE, c.BAIRRO, c.UF, c.CEP, c.NUM, c.CONTATO, c.DTINCLUSAO, c.HRINCLUSAO, 
+    c.DTPREVENTREGA, c.HRPREVENTREGA, c.DTATENDIMENTO, c.DDD, c.FONE, c.EMAIL, c.OBSDEFEITOCLI, c.OBSDEFEITOATS,
     e.SERIE, e.MODELO, e.DEPARTAMENTO, e.LOCALINSTAL, e.PATRIMONIO, e.SEQCONTRATO,
     pi.QUANTIDADE, pi.CDPRODUTO, p.NMPRODUTO, emp.empresa_fantasia
     FROM chamados c
@@ -23,6 +24,11 @@ export async function getAllOrdersRepository(idTecnico: string, idBase: number, 
     // Adiciona a cláusula do status somente se fornecido
     if (status && status.trim() !== '') {
     query += ` AND c.STATUS = '${status}'`;
+    }
+
+    // Adicionar a cláusula de seqos somente se fornecida
+    if (seqos && seqos !== undefined) {
+    query += ` AND c.SEQOS = '${seqos}' `
     }
 
     query += `
@@ -55,11 +61,15 @@ const chamados: any[] = await prisma.$queryRawUnsafe(query);
                     uf: chamado.UF,
                     cidade: chamado.CIDADE,
                     num: chamado.NUM,
+                    fone: `${chamado.DDD} ${chamado.FONE}`,
+                    email: chamado.EMAIL,
                 },
                 equipment: {
                     code: chamado.CDEQUIPAMENTO?.toString() || null,
                     serial: chamado.SERIE || null,
                     model: chamado.MODELO || null,
+                    obsdefectcli: chamado.OBSDEFEITOCLI || null,
+                    obsdefectats: chamado.OBSDEFEITOATS || null
                 },
                 parts: [],
             };
