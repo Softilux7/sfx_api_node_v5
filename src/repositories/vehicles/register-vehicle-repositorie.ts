@@ -7,7 +7,6 @@ export async function registerVehicleRepositorie(
   placa: string,
   km: number
 ) {
-  console.log("Query")
   await prisma.$executeRawUnsafe(`
     INSERT INTO app_veiculos 
       (ID_BASE, TECNICO_ID, nome_veiculo, placa, KM_TOTAL)

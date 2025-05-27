@@ -1,23 +1,22 @@
-import { prisma } from "../lib/prisma";
+import { prisma } from '../lib/prisma'
 
 export type TimeLineEntry = {
-  id_transaction?: number; // int(5), opcional, default = 0
-  ID_BASE: number; // int(5)
-  empresa_id: number; // int(11)
-  id_atendimento: number; // int(11)
-  id_tecnico: string; // varchar(20)
-  create_at: Date; // timestamp
-  andamento_chamado_snapshot: string; // varchar(255)
-  tipo_time_line: string; // varchar(255)
-  address: string; // varchar(255)
-  latitute?: number; // float(12,8)
-  longitute?: number; // float(12,8)
-  distance?: number; // int(11), opcional, default = -1
-  location_captured: number; // tinyint(1) (0/1)
-  motivo?: string | null; // varchar(255), pode ser null
-  motivo_outros?: string | null; // text, pode ser null
-};
-
+  id_transaction?: number // int(5), opcional, default = 0
+  ID_BASE: number // int(5)
+  empresa_id: number // int(11)
+  id_atendimento: number // int(11)
+  id_tecnico: string // varchar(20)
+  create_at: Date // timestamp
+  andamento_chamado_snapshot: string // varchar(255)
+  tipo_time_line: string // varchar(255)
+  address: string // varchar(255)
+  latitute?: number // float(12,8)
+  longitute?: number // float(12,8)
+  distance?: number // int(11), opcional, default = -1
+  location_captured: number // tinyint(1) (0/1)
+  motivo?: string | null // varchar(255), pode ser null
+  motivo_outros?: string | null // text, pode ser null
+}
 
 export async function addTimeLine(data: TimeLineEntry) {
   await prisma.$executeRaw`
@@ -54,5 +53,5 @@ export async function addTimeLine(data: TimeLineEntry) {
       ${data.id_transaction ?? 0},
       ${data.distance ?? -1}
     )
-  `;
+  `
 }

@@ -1,17 +1,16 @@
-import { prisma } from "../../lib/prisma";
-
+import { prisma } from '../../lib/prisma'
 
 export async function getOrdersHistory(idBase: number, cdequipamento: number) {
-    return prisma.$queryRaw<
-        { 
-            id: number; 
-            SEQOS: number; 
-            DTATENDIMENTO: Date; 
-            CONTATO: string; 
-            DTINCLUSAO: Date; 
-            STATUS: string 
-        }[]
-    >`
+  return prisma.$queryRaw<
+    {
+      id: number
+      SEQOS: number
+      DTATENDIMENTO: Date
+      CONTATO: string
+      DTINCLUSAO: Date
+      STATUS: string
+    }[]
+  >`
         SELECT 
         id, 
         SEQOS, 
@@ -23,5 +22,5 @@ export async function getOrdersHistory(idBase: number, cdequipamento: number) {
         WHERE ID_BASE = ${idBase} 
           AND CDEQUIPAMENTO = ${cdequipamento} 
         LIMIT 15
-    `;
+    `
 }

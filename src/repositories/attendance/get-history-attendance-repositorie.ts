@@ -1,6 +1,7 @@
-import { prisma } from '../../lib/prisma';
+import { prisma } from '../../lib/prisma'
 
 export async function getHistoryAtendimentoRepository(idChamado: number) {
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   const result = await prisma.$queryRawUnsafe<any[]>(`
     SELECT 
       a.id, 
@@ -25,11 +26,11 @@ export async function getHistoryAtendimentoRepository(idChamado: number) {
     WHERE a.chamado_id = ${idChamado}
       AND a.ANDAMENTO_CHAMADO_APP <> 15
     ORDER BY a.id DESC
-  `);
+  `)
 
   if (result.length > 0) {
-    return { success: true, data: result };
+    return { success: true, data: result }
   }
 
-  return { success: false, data: [] };
+  return { success: false, data: [] }
 }
