@@ -73,6 +73,10 @@ app.register(listVehicles)
 app.register(updateVehicle)
 app.register(deleteVehicle)
 
+app.get('/', async (request, reply) => {
+  return { message: 'API funcionando corretamente 👌' }
+})
+
 app.listen({ port: 3308, host: '0.0.0.0' }).then(() => {
   console.log('HTTP server is running!')
 })

@@ -9,6 +9,11 @@ GET {{baseUrl}}/pecas/1/1430
 
 ###
 
+# @name get-linked-parts
+GET {{baseUrl}}/
+
+###
+
 # @name get-clients
 GET {{baseUrl}}/clientes/1
 
