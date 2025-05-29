@@ -3,10 +3,12 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import { prisma } from '../../../lib/prisma'
 
 const uploadSchema = z.object({
   idAtendimento: z.string(),
   idBase: z.string(),
+  empresa_id: z.string(),
   type: z.enum(['1', '2']),
 })
 
@@ -57,6 +59,21 @@ export async function uploadPhotos(app: FastifyInstance) {
     try {
       fs.mkdirSync(fullDirPath, { recursive: true })
       fs.writeFileSync(fullFilePath, fileBuffer)
+
+      // Cria registro na tabela app_atendimento_photos
+      await prisma.app_atendimento_photos.create({
+        data: {
+          ID_BASE: Number(idBase),
+          id_empresa: Number(fields.empresa_id),
+          id_atendimento: Number(idAtendimento), // pode usar string se o campo no banco for VARCHAR
+          type: Number(type),
+          status: 1,
+          create_at: new Date(),
+          filename,
+          path: `/${idBase}/${idAtendimento}/${folder}/`,
+          description: null,
+        },
+      })
 
       return reply.send({
         success: true,
