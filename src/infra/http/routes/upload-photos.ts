@@ -43,8 +43,8 @@ export async function uploadPhotos(app: FastifyInstance) {
     const folder = type === '1' ? 'fotos' : 'assinatura'
     const filename = type === '1' ? `${randomUUID()}.jpg` : 'assinatura.jpg'
 
-    const rootPath = path.join(__dirname, '..', 'uploads')
-    // const rootPath = "/var/www/html";
+    // const rootPath = path.join(__dirname, '..', 'uploads')
+    const rootPath = '/var/www/html'
     const fullDirPath = path.join(
       rootPath,
       'files',
