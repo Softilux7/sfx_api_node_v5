@@ -6,24 +6,18 @@ import { listVehiclePlatesRepositorie } from '../../../repositories/vehicles/lis
 // Rota de listagem dos veículos cadastrados
 export async function listVehicles(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().get(
-    '/vehicles/:idBase/:placa/:nomeVeiculo',
+    '/vehicles/:idBase',
     {
       schema: {
         params: z.object({
           idBase: z.coerce.number(),
-          placa: z.string().optional(),
-          nomeVeiculo: z.string().optional(),
         }),
       },
     },
     async request => {
-      const { idBase, placa, nomeVeiculo } = request.params
+      const { idBase } = request.params
 
-      const status = await listVehiclePlatesRepositorie(
-        idBase,
-        placa,
-        nomeVeiculo
-      )
+      const status = await listVehiclePlatesRepositorie(idBase)
 
       return status
     }

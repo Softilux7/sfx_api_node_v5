@@ -1,11 +1,10 @@
 import { prisma } from '../../lib/prisma'
 
-export async function listVehiclePlatesRepositorie(
-  idBase: number,
-  nomeVeiculo?: string,
-  placa?: string
-) {
-  let query = `
+export async function listVehiclePlatesRepositorie(idBase: number) {
+  const veiculos = await prisma.$queryRawUnsafe<
+    { ID_BASE: number; nome_veiculo: string; placa: string; KM_TOTAL: number }[]
+  >(
+    `
     SELECT 
       ID_BASE,
       nome_veiculo,
@@ -13,24 +12,9 @@ export async function listVehiclePlatesRepositorie(
       KM_TOTAL
     FROM app_veiculos
     WHERE ID_BASE = ?
-  `
-
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  const params: any[] = [idBase]
-
-  if (nomeVeiculo) {
-    query += ' AND nome_veiculo = ?'
-    params.push(nomeVeiculo)
-  }
-
-  if (placa) {
-    query += ' AND placa = ?'
-    params.push(placa)
-  }
-
-  const veiculos = await prisma.$queryRawUnsafe<
-    { ID_BASE: number; nome_veiculo: string; placa: string; KM_TOTAL: number }[]
-  >(query, ...params)
+    `,
+    idBase
+  )
 
   if (veiculos.length > 0) {
     return { success: true, data: veiculos }
