@@ -8,9 +8,10 @@ export async function getAllOrdersRepository(
     seqos?: number
     portalId?: number
     serie?: string
+    patrimonio?: string
   }
 ) {
-  const { seqos, portalId, serie } = options || {}
+  const { seqos, portalId, serie, patrimonio } = options || {}
 
   // Monta a base da query
   let query = `
@@ -19,7 +20,8 @@ export async function getAllOrdersRepository(
       c.CDCLIENTE, c.NMCLIENTE, c.ENDERECO, c.CIDADE, c.BAIRRO, c.UF, c.CEP, c.NUM, c.CONTATO, c.DTINCLUSAO, c.HRINCLUSAO, 
       c.DTPREVENTREGA, c.HRPREVENTREGA, c.DTATENDIMENTO, c.DDD, c.FONE, c.EMAIL, c.OBSDEFEITOCLI, c.OBSDEFEITOATS,
       e.SERIE, e.MODELO, e.DEPARTAMENTO, e.LOCALINSTAL, e.PATRIMONIO, e.SEQCONTRATO,
-      pi.QUANTIDADE, pi.CDPRODUTO, p.NMPRODUTO, emp.empresa_fantasia
+      pi.QUANTIDADE, pi.CDPRODUTO, p.NMPRODUTO, emp.empresa_fantasia,
+      STR_TO_DATE(CONCAT(c.DTPREVENTREGA, ' ', c.HRPREVENTREGA), '%Y-%m-%d %H:%i:%s') AS previsao_atendimento
     FROM chamados c
     LEFT JOIN equipamentos e ON c.CDEQUIPAMENTO = e.CDEQUIPAMENTO AND e.ID_BASE = ${idBase}
     LEFT JOIN chamados_itens pi ON c.SEQOS = pi.SEQOS AND pi.ID_BASE = ${idBase}
@@ -47,8 +49,12 @@ export async function getAllOrdersRepository(
     query += ` AND e.SERIE = '${serie}'`
   }
 
+  if (patrimonio && patrimonio.trim() !== '') {
+    query += ` AND e.PATRIMONIO = '${patrimonio}'`
+  }
+
   query += `
-    ORDER BY c.DTINCLUSAO DESC, c.HRINCLUSAO DESC
+    ORDER BY previsao_atendimento ASC
     LIMIT 30
   `
 
@@ -64,6 +70,7 @@ export async function getAllOrdersRepository(
         sequence: chamado.id,
         seqos: chamado.SEQOS,
         openDate: chamado.DTINCLUSAO || null,
+        prevDate: chamado.previsao_atendimento,
         status: chamado.STATUS,
         cdstatus: chamado.CDSTATUS,
         cdempresa: chamado.empresa_id,

@@ -401,6 +401,7 @@ export async function updateAttendance(
       await prisma.$executeRaw`
                 UPDATE atendimentos
                 SET 
+                    HRATENDIMENTOFIN = ${params.HRATENDIMENTOFIN},
                     TEMPOATENDIMENTO = ${TEMPOATENDIMENTO},
                     ANDAMENTO_CHAMADO_APP = 11
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}

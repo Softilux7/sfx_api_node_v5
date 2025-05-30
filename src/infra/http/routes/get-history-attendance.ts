@@ -6,18 +6,19 @@ import { getHistoryAtendimentoRepository } from '../../../repositories/attendanc
 // Rota de busca do histórico de atendimentos da OS
 export async function getHistoryAttendance(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().get(
-    '/historico/:idChamado',
+    '/historico/:idBase/:idChamado',
     {
       schema: {
         params: z.object({
           idChamado: z.coerce.number(),
+          idBase: z.coerce.number(),
         }),
       },
     },
     async request => {
-      const { idChamado } = request.params
+      const { idChamado, idBase } = request.params
 
-      const result = await getHistoryAtendimentoRepository(idChamado)
+      const result = await getHistoryAtendimentoRepository(idChamado, idBase)
 
       return result
     }

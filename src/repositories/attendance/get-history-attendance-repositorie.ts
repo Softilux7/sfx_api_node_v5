@@ -1,6 +1,9 @@
 import { prisma } from '../../lib/prisma'
 
-export async function getHistoryAtendimentoRepository(idChamado: number) {
+export async function getHistoryAtendimentoRepository(
+  idChamado: number,
+  idBase: number
+) {
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   const result = await prisma.$queryRawUnsafe<any[]>(`
     SELECT 
@@ -14,17 +17,17 @@ export async function getHistoryAtendimentoRepository(idChamado: number) {
       a.ACAO, 
       a.SEQOS, 
       a.OBSERVACAO, 
-      c.OBSDEFEITOATS, 
+      c.OBSDEFEITOATS,
       d.NMDEFEITO, 
       a.NMATENDENTE, 
       a.ANDAMENTO_CHAMADO_APP
     FROM atendimentos a
     INNER JOIN chamados c ON c.id = a.chamado_id
     INNER JOIN defeitos d ON d.CDDEFEITO = c.CDDEFEITO 
-      AND d.empresa_id = a.empresa_id
       AND d.ID_BASE = a.ID_BASE
     WHERE a.chamado_id = ${idChamado}
-      AND a.ANDAMENTO_CHAMADO_APP <> 15
+      AND a.ID_BASE = ${idBase}
+      AND a.ANDAMENTO_CHAMADO_APP = 30
     ORDER BY a.id DESC
   `)
 

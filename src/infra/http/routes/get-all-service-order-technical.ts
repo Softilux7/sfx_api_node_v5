@@ -16,16 +16,19 @@ export async function getAllServiceOrderTechnical(app: FastifyInstance) {
           seqos: z.coerce.number().optional(),
           portalId: z.coerce.number().optional(),
           serie: z.string().optional(),
+          patrimonio: z.string().optional(),
         }),
       },
     },
     async request => {
-      const { idTecnico, idBase, status, seqos, portalId, serie } = request.body
+      const { idTecnico, idBase, status, seqos, portalId, serie, patrimonio } =
+        request.body
 
       const data = await getAllOrdersRepository(idTecnico, idBase, status, {
         seqos,
         portalId,
         serie,
+        patrimonio,
       })
 
       return { success: true, chamados: data }
