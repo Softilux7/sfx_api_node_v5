@@ -14,6 +14,7 @@ import { registerExpoToken } from './routes/register-expo-token'
 import { registerVehicle } from './routes/register-vehicle'
 import { sendNotificationRoute } from './routes/send-notification'
 import { sendSMS } from './routes/send-sms'
+import { getParts } from './routes/get-linked-parts'
 import { updateAtendimento } from './routes/update-attendance'
 import { updateVehicle } from './routes/update-vehicle'
 import { uploadPhotos } from './routes/upload-photos'
@@ -37,4 +38,5 @@ export async function registerRoutes(app: FastifyInstance) {
   app.register(listVehicles)
   app.register(updateVehicle)
   app.register(deleteVehicle)
+  app.register(getParts)
 }

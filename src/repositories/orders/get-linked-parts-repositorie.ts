@@ -1,32 +1,25 @@
 import { prisma } from '../../lib/prisma'
 
 export async function getLinkedParts(idBase: number, seqOs: number) {
-  const linkedParts = await prisma.chamados_itens.findMany({
-    where: {
-      ID_BASE: idBase,
-      SEQOS: seqOs,
-      TFPENDENTE: 'S',
-    },
-    select: {
-      QUANTIDADE: true,
-      CDPRODUTO: true,
-      produtos: {
-        select: {
-          NMPRODUTO: true,
-        },
-      },
-    },
-  })
+  const query = `
+    SELECT
+        ci.QUANTIDADE, ci.CDPRODUTO, p.NMPRODUTO 
+    FROM
+        chamados_itens ci
+    INNER JOIN produtos p ON
+        p.ID_BASE = ci.ID_BASE
+        and p.CDPRODUTO = ci.CDPRODUTO
+    WHERE
+        ci.ID_BASE = ${idBase}
+        and ci.SEQOS = ${seqOs}
+  `
 
-  if (!linkedParts || linkedParts.length === 0) {
-    return []
-  }
+  const linkedParts = await prisma.$queryRawUnsafe<any[]>(query)
 
-  // Mapeamento das peças vinculadas
   const parts = linkedParts.map(peca => ({
     quantidade: peca.QUANTIDADE,
     cdproduto: peca.CDPRODUTO,
-    nmproduto: peca.produtos?.NMPRODUTO || 'Produto não especificado',
+    nmproduto: peca.NMPRODUTO || 'Produto não especificado',
   }))
 
   return { parts }

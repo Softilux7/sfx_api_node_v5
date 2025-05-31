@@ -17,7 +17,7 @@ export async function getResumoChamados(app: FastifyInstance) {
     },
     async request => {
       const { tecnicoId, idBase } = request.params
-
+      
       const data = await getResumoChamadosRepository(tecnicoId, idBase)
 
       return { success: true, data }

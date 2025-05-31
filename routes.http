@@ -5,12 +5,7 @@
 ### CHAMADOS ###
 
 # @name get-linked-parts
-GET {{baseUrl}}/pecas/1/1430
-
-###
-
-# @name get-linked-parts
-GET {{baseUrl}}/
+GET {{baseUrl}}/parts/1/1566
 
 ###
 

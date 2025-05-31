@@ -6,10 +6,9 @@ export async function getResumoChamadosRepository(
   tecnicoId: string,
   idBase: number
 ) {
-  // Obtém as empresas vinculadas ao técnico
+  // Pega empresas vinculadas ao técnico
   const empresas = await getCompaniesByTechnical(tecnicoId, idBase)
 
-  // Verifica se alguma empresa foi encontrada
   if (empresas.length === 0) {
     return {
       success: false,
@@ -17,27 +16,32 @@ export async function getResumoChamadosRepository(
     }
   }
 
-  // Consulta os chamados
+  // Query com INNER JOINs para garantir integridade conforme original
   const resumoChamados = await prisma.$queryRaw<
-    { STATUS: string; total: number }[]
+    { status: string; amount: bigint }[]
   >(
     Prisma.sql`
-        SELECT STATUS, COUNT(*) AS total
-        FROM chamados
-        WHERE ID_BASE = ${idBase}
-          AND empresa_id IN (${Prisma.join(empresas)})
-          AND TFLIBERADO = 'S'
-          AND NMSUPORTET = ${tecnicoId}
-        GROUP BY STATUS
-        ORDER BY total DESC
-        LIMIT 30`
+      SELECT chamados.STATUS as status, COUNT(chamados.STATUS) AS amount
+      FROM chamados
+      INNER JOIN equipamentos
+        ON chamados.CDEQUIPAMENTO = equipamentos.CDEQUIPAMENTO
+        AND equipamentos.ID_BASE = chamados.ID_BASE
+      INNER JOIN defeitos
+        ON defeitos.CDDEFEITO = chamados.CDDEFEITO
+        AND defeitos.ID_BASE = chamados.ID_BASE
+      WHERE chamados.ID_BASE = ${idBase}
+        AND chamados.empresa_id IN (${Prisma.join(empresas)})
+        AND chamados.TFLIBERADO = 'S'
+        AND chamados.NMSUPORTET = ${tecnicoId}
+      GROUP BY chamados.STATUS
+    `
   )
 
-  // Mapeia os STATUS para o formato desejado e converte BigInt para Number
+  // Transforma o resultado em objeto simples { O: 553, T: 97, ... }
   const result = resumoChamados.reduce(
     (acc, chamado) => {
-      if (chamado.STATUS !== null) {
-        acc[chamado.STATUS] = Number(chamado.total)
+      if (chamado.status !== null) {
+        acc[chamado.status] = Number(chamado.amount)
       }
       return acc
     },
