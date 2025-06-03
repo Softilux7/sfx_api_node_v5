@@ -37,6 +37,7 @@ export async function updateAtendimento(app: FastifyInstance) {
             DESLOCAMENTO_APP: z.number().optional(),
             KMFINAL: z.coerce.number().optional(),
             OBSERVACAO: z.string().optional(),
+            FOLLOWUP: z.string().optional(),
             SINTOMA: z.string().optional(),
             ACAO: z.string().optional(),
             CAUSA: z.string().optional(),

@@ -27,6 +27,7 @@ export async function updateAttendance(
     HRVIAGEMFIN?: string | undefined
     DESLOCAMENTO_APP?: number | undefined
     KMFINAL?: number | undefined
+    FOLLOWUP?: string | undefined
     OBSERVACAO?: string | undefined
     SINTOMA?: string | undefined
     ACAO?: string | undefined
@@ -328,10 +329,11 @@ export async function updateAttendance(
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `
 
-      // Atualiza o status do chamado
+      // Atualiza o status do chamado e observação defeito (follow-up)
       await prisma.$executeRaw`
             UPDATE chamados 
             SET 
+                OBSDEFEITOATS = ${params.FOLLOWUP},
                 STATUS = ${params.STATUS},
                 CDSTATUS = ${params.CDSTATUS}
             WHERE ID_BASE = ${ID_BASE} AND SEQOS = ${params.SEQOS}
@@ -382,7 +384,8 @@ export async function updateAttendance(
       const HRATENDIMENTOINI = dayjs
         .utc(response[0].HRATENDIMENTO)
         .format('HH:mm:ss')
-      const HRATENDIMENTOFIN = dayjs(params.HRATENDIMENTOFIN).format('HH:mm:ss')
+
+      const HRATENDIMENTOFIN = params.HRATENDIMENTOFIN!
 
       const getTimeService = (start: string, end: string): number => {
         const startTime = dayjs(`1970-01-01T${start}`)
