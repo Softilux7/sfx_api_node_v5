@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client'
 import { prisma } from '../../lib/prisma'
 import { getCompaniesByTechnical } from '../companies/get-companies-technical-repositorie'
 import { getLinkedParts } from './get-linked-parts-repositorie'
@@ -12,9 +11,20 @@ export async function getAllOrdersRepository(
     portalId?: number
     serie?: string
     patrimonio?: string
+    orderByRota?: boolean
   }
 ) {
-  const { seqos, portalId, serie, patrimonio } = options || {}
+  const { seqos, portalId, serie, patrimonio, orderByRota } = options || {}
+
+  const orderClause = orderByRota
+    ? `
+    ORDER BY 
+      CASE 
+        WHEN c.ROTA_INDEX = -1 THEN 9999
+        ELSE c.ROTA_INDEX
+      END ASC
+  `
+    : 'ORDER BY previsao_atendimento ASC'
 
   const empresas = await getCompaniesByTechnical(idTecnico, idBase)
 
@@ -69,8 +79,9 @@ export async function getAllOrdersRepository(
     query += ` AND e.PATRIMONIO = '${patrimonio}'`
   }
 
+  // Ordena por ROTA_INDEX
   query += `
-  ORDER BY previsao_atendimento ASC
+  ${orderClause}
   LIMIT 21
 `
 
@@ -78,7 +89,7 @@ export async function getAllOrdersRepository(
   const chamados: any[] = await prisma.$queryRawUnsafe(query)
 
   const formattedData = await Promise.all(
-    chamados.map(async (chamado) => {
+    chamados.map(async chamado => {
       const partsData = await getLinkedParts(chamado.ID_BASE, chamado.SEQOS)
 
       return {

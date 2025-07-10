@@ -45,7 +45,14 @@ GET {{baseUrl}}/chamados/1054763/detail
 ###
 
 # @name get-all-service-order-technical
-GET {{baseUrl}}/tecnico/TECNICOAPP/1/M/todos-chamados-tecnico
+POST {{baseUrl}}/tecnico/todos-chamados-tecnico
+Content-Type: application/json
+
+{
+  "idTecnico": "TECNICO2",
+  "idBase": 1,
+  "status": "M"
+}
 
 ###
 

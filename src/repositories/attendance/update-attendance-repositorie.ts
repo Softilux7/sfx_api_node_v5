@@ -385,6 +385,7 @@ export async function updateAttendance(
         .utc(response[0].HRATENDIMENTO)
         .format('HH:mm:ss')
 
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       const HRATENDIMENTOFIN = params.HRATENDIMENTOFIN!
 
       const getTimeService = (start: string, end: string): number => {
