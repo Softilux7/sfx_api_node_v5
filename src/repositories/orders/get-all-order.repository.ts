@@ -96,6 +96,7 @@ export async function getAllOrdersRepository(
         sequence: chamado.id,
         seqos: chamado.SEQOS,
         openDate: chamado.DTINCLUSAO || null,
+        hourOpen: chamado.HRINCLUSAO,
         prevDate: chamado.previsao_atendimento,
         status: chamado.STATUS,
         cdstatus: chamado.CDSTATUS,
@@ -116,6 +117,9 @@ export async function getAllOrdersRepository(
         equipment: {
           code: chamado.CDEQUIPAMENTO?.toString() || null,
           serial: chamado.SERIE || null,
+          patrimonio: chamado.PATRIMONIO || null,
+          local_instal: chamado.LOCALINSTAL || null,
+          departamento: chamado.DEPARTAMENTO || null,
           model: chamado.MODELO || null,
           obsdefectcli: chamado.OBSDEFEITOCLI || null,
           obsdefectats: chamado.OBSDEFEITOATS || null,

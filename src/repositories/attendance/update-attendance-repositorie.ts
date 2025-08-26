@@ -482,18 +482,28 @@ export async function updateAttendance(
         const { TEMPOVIAGEM, VALATENDIMENTO, VALKM } =
           await calcularAtendimentoCaso30(id, ID_BASE, params.KMFINAL)
 
-        // Atualizar o atendimento com os novos valores calculados
-        await prisma.$executeRaw`
-                UPDATE atendimentos 
-                SET TEMPOVIAGEM = ${TEMPOVIAGEM}, 
-                    VALATENDIMENTO = ${VALATENDIMENTO}, 
-                    VALKM = ${VALKM}, 
-                    ANDAMENTO_CHAMADO_APP = 30,
-                    ATUALIZADO = 1, 
-                    TFVISITA= 'S'
-                WHERE ID_BASE = ${ID_BASE} AND id = ${id};
-                `
+        const camposUpdate = [
+          `TEMPOVIAGEM = '${TEMPOVIAGEM}'`, // <<-- coloque entre aspas
+          `VALATENDIMENTO = ${VALATENDIMENTO}`,
+          `VALKM = ${VALKM}`,
+          // biome-ignore lint/style/noUnusedTemplateLiteral: <explanation>
+          `ANDAMENTO_CHAMADO_APP = 30`,
+          // biome-ignore lint/style/noUnusedTemplateLiteral: <explanation>
+          `ATUALIZADO = 1`,
+          `TFVISITA = 'S'`, // já está ok aqui
+        ]
 
+        if (params.KMFINAL !== undefined && params.KMFINAL !== null) {
+          camposUpdate.push(`KMFINAL = ${params.KMFINAL}`)
+        }
+
+        const updateQuery = `
+        UPDATE atendimentos 
+        SET ${camposUpdate.join(', ')}
+        WHERE ID_BASE = ${ID_BASE} AND id = ${id};
+      `
+
+        await prisma.$executeRawUnsafe(updateQuery)
         // Buscar os dados atualizados
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         const updatedAttendance: any[] = await prisma.$queryRaw`
