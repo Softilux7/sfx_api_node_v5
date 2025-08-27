@@ -97,7 +97,7 @@ export async function getAllOrdersRepository(
         seqos: chamado.SEQOS,
         openDate: chamado.DTINCLUSAO || null,
         hourOpen: chamado.HRINCLUSAO,
-        prevDate: chamado.previsao_atendimento,
+        prevDate: chamado.PREVISAOATENDIMENTO,
         status: chamado.STATUS,
         cdstatus: chamado.CDSTATUS,
         cdempresa: chamado.empresa_id,
