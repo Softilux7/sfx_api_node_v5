@@ -12,8 +12,10 @@ export async function getLinkedParts(idBase: number, seqOs: number) {
     WHERE
         ci.ID_BASE = ${idBase}
         and ci.SEQOS = ${seqOs}
+        and TF_TROCA_KIT_TECNICO = 'N'
   `
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   const linkedParts = await prisma.$queryRawUnsafe<any[]>(query)
 
   const parts = linkedParts.map(peca => ({

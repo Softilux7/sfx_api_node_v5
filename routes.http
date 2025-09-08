@@ -136,7 +136,7 @@ GET {{baseUrl}}/history/1/orders/1430/304
 ###
 
 # @name get-history-attendance
-GET {{baseUrl}}/historico/1/3231230
+GET {{baseUrl}}/historico-equipamento/1/4
 
 ###
 
@@ -147,3 +147,4 @@ Content-Type: application/json
 {
   "phone": "+5548984467979"
 }
+

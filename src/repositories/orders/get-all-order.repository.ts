@@ -46,7 +46,7 @@ export async function getAllOrdersRepository(
       SELECT ci.CDPRODUTO
       FROM chamados_itens ci
       INNER JOIN produtos p ON p.ID_BASE = ci.ID_BASE AND p.CDPRODUTO = ci.CDPRODUTO
-      WHERE ci.ID_BASE = c.ID_BASE AND ci.SEQOS = c.SEQOS AND TFPENDENTE = 'S'
+      WHERE ci.ID_BASE = c.ID_BASE AND ci.SEQOS = c.SEQOS AND TFPENDENTE = 'S' AND TF_TROCA_KIT_TECNICO = 'N'
       LIMIT 1
     ) AS peca_vinculada
   FROM chamados c
@@ -91,7 +91,6 @@ export async function getAllOrdersRepository(
   const formattedData = await Promise.all(
     chamados.map(async chamado => {
       const partsData = await getLinkedParts(chamado.ID_BASE, chamado.SEQOS)
-
       return {
         sequence: chamado.id,
         seqos: chamado.SEQOS,

@@ -4,9 +4,9 @@ import { z } from 'zod'
 import { getOrdersHistory } from '../../../repositories/orders/get-history-order-repositorie'
 
 // Rota de busca por histórico de chamados do equipamento
-export async function getHistoryOrders(app: FastifyInstance) {
+export async function getHistoryEquipmentsOrders(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().get(
-    '/history/orders/:idBase/:cdequipamento',
+    '/historico-equipamento/:idBase/:cdequipamento',
     {
       schema: {
         params: z.object({

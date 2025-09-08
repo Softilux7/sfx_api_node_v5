@@ -1,8 +1,15 @@
+import { Prisma } from '@prisma/client'
 import dayjs from 'dayjs'
 import { addTimeLine } from '../../functions/add-timeline'
 import { calcularAtendimentoCaso30 } from '../../functions/calc-attendance'
 import { BadRequest } from '../../infra/http/routes/@errors/bad-request'
 import { prisma } from '../../lib/prisma'
+
+export type AttendancePart = {
+  quantidade: number
+  cdproduto: string
+  nmproduto: string
+}
 
 export async function updateAttendance(
   id: number,
@@ -37,8 +44,10 @@ export async function updateAttendance(
     STATUS?: string | undefined
     SEQOS?: number | undefined
     DESTINO_POS_ATENDIMENTO_APP?: number | undefined
+    PARTS?: AttendancePart[] | undefined
   }
 ) {
+  const create_at = dayjs().subtract(3, 'hour').toDate()
   // Lógica para diferentes etapas do progresso
   switch (progress) {
     case 2: {
@@ -72,7 +81,7 @@ export async function updateAttendance(
         id_transaction: params.ID_TRANSACTION, //2
         ID_BASE: updatedAtendimento[0].ID_BASE,
         empresa_id: updatedAtendimento[0].empresa_id,
-        create_at: new Date(),
+        create_at,
       })
 
       return updatedAtendimento[0]
@@ -110,7 +119,7 @@ export async function updateAttendance(
         id_transaction: params.ID_TRANSACTION, // 3
         ID_BASE: pauseBeforeClient[0].ID_BASE,
         empresa_id: pauseBeforeClient[0].empresa_id,
-        create_at: new Date(),
+        create_at,
       })
 
       break
@@ -152,7 +161,7 @@ export async function updateAttendance(
         id_transaction: params.ID_TRANSACTION, // 4
         ID_BASE: updatedArrivalTrip[0].ID_BASE,
         empresa_id: updatedArrivalTrip[0].empresa_id,
-        create_at: new Date(),
+        create_at,
       })
 
       return updatedArrivalTrip[0]
@@ -190,7 +199,7 @@ export async function updateAttendance(
         id_transaction: params.ID_TRANSACTION, // 5
         ID_BASE: pauseAfterClient[0].ID_BASE,
         empresa_id: pauseAfterClient[0].empresa_id,
-        create_at: new Date(),
+        create_at,
       })
 
       break
@@ -229,7 +238,7 @@ export async function updateAttendance(
         id_transaction: params.ID_TRANSACTION, // 6
         ID_BASE: updatedInAttendance[0].ID_BASE,
         empresa_id: updatedInAttendance[0].empresa_id,
-        create_at: new Date(),
+        create_at,
       })
 
       return updatedInAttendance[0]
@@ -267,7 +276,7 @@ export async function updateAttendance(
         id_transaction: params.ID_TRANSACTION, // 7
         ID_BASE: pauseInAttendace[0].ID_BASE,
         empresa_id: pauseInAttendace[0].empresa_id,
-        create_at: new Date(),
+        create_at,
       })
 
       return pauseInAttendace
@@ -304,10 +313,34 @@ export async function updateAttendance(
         id_transaction: params.ID_TRANSACTION, // 8
         ID_BASE: updatedFinishAttendance[0].ID_BASE,
         empresa_id: updatedFinishAttendance[0].empresa_id,
-        create_at: new Date(),
+        create_at,
       })
 
       return updatedFinishAttendance[0]
+    }
+
+    case 9: {
+      // Marcar peças como trocadas
+      if (params.PARTS && params.PARTS.length > 0) {
+        const productCodes = params.PARTS.map(p => p.cdproduto)
+        await prisma.$executeRaw`
+          UPDATE chamados_itens
+          SET TF_TROCA_KIT_TECNICO = 'S'
+          WHERE SEQOS = ${params.SEQOS}
+            AND ID_BASE = ${ID_BASE}
+            AND CDPRODUTO IN (${Prisma.join(productCodes)})
+        `
+      }
+
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      const updateAtendimentoChangePart: any[] = await prisma.$queryRaw`
+            SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}`
+
+      if (updateAtendimentoChangePart.length === 0) {
+        throw new BadRequest('Não foi possível atualizar o progresso [9]')
+      }
+
+      return updateAtendimentoChangePart[0]
     }
 
     case 10: {
@@ -363,7 +396,7 @@ export async function updateAttendance(
         id_transaction: params.ID_TRANSACTION, // 9
         ID_BASE: updatedFormAttendance[0].ID_BASE,
         empresa_id: updatedFormAttendance[0].empresa_id,
-        create_at: new Date(),
+        create_at,
       })
 
       return updatedFormAttendance[0]
@@ -435,7 +468,7 @@ export async function updateAttendance(
         id_transaction: params.ID_TRANSACTION, // 10
         ID_BASE: updatedAttendance[0].ID_BASE,
         empresa_id: updatedAttendance[0].empresa_id,
-        create_at: new Date(),
+        create_at,
       })
 
       return updatedAttendance[0]
@@ -536,7 +569,7 @@ export async function updateAttendance(
           id_transaction: params.ID_TRANSACTION, // 11
           ID_BASE: updatedAttendance[0].ID_BASE,
           empresa_id: updatedAttendance[0].empresa_id,
-          create_at: new Date(),
+          create_at,
         })
 
         return updatedAttendance[0]
@@ -578,7 +611,7 @@ export async function updateAttendance(
         id_transaction: params.ID_TRANSACTION, // 11 OU 12
         ID_BASE: returnBack[0].ID_BASE,
         empresa_id: returnBack[0].empresa_id,
-        create_at: new Date(),
+        create_at,
       })
 
       return returnBack[0]

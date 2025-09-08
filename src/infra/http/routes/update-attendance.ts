@@ -47,6 +47,15 @@ export async function updateAtendimento(app: FastifyInstance) {
             STATUS: z.string().optional(),
             NMATENDENTE: z.string().optional(),
             DESTINO_POS_ATENDIMENTO_APP: z.number().optional(),
+            PARTS: z
+              .array(
+                z.object({
+                  quantidade: z.number(),
+                  cdproduto: z.string(),
+                  nmproduto: z.string(),
+                })
+              )
+              .optional(),
           }),
         }),
       },

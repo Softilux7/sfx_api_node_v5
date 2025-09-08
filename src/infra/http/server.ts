@@ -22,6 +22,7 @@ app.setSerializerCompiler(serializerCompiler)
 
 app.setErrorHandler((error, _, reply) => {
   if (error) {
+    console.log(error)
     return reply.status(400).send({
       message: 'Validation error',
       issues: error.validation,
