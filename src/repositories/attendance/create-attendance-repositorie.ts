@@ -45,6 +45,7 @@ export async function createAtendimentoService(input: CreateAtendimentoInput) {
   } = input
 
   const now = dayjs()
+  const create_at = dayjs().subtract(3, 'hour').toDate()
   const DTATENDIMENTO = now.startOf('day').toDate()
 
   const atendimento = await prisma.atendimentos.create({
@@ -101,7 +102,7 @@ export async function createAtendimentoService(input: CreateAtendimentoInput) {
     id_transaction: 1,
     ID_BASE,
     empresa_id,
-    create_at: new Date(),
+    create_at,
   })
 
   return atendimento

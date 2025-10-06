@@ -12,7 +12,6 @@ export async function registerExpoTokenRepository(
     UPDATE users SET token_2 = ${token} WHERE empresa_id = ${idEmpresa} AND tecnico_id = ${tecnicoId} LIMIT 1
   `
 
-  console.log('Teste de rota')
   // Verifica se encontrou algum usuário
   if (users.length === 0) {
     return { success: false, message: 'Nenhum usuário encontrado' }

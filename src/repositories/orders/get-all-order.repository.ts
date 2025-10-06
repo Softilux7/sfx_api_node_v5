@@ -40,8 +40,9 @@ export async function getAllOrdersRepository(
     c.OBSDEFEITOATS, c.OBSDEFEITOCLI, c.DEPARTAMENTO, c.STATUS,
     e.SERIE, e.MODELO, e.DEPARTAMENTO, e.LOCALINSTAL, e.PATRIMONIO, c.CDEQUIPAMENTO,
     d.NMDEFEITO,
+    t.NMOSTP,
     STR_TO_DATE(CONCAT(c.DTPREVENTREGA, ' ', c.HRPREVENTREGA), '%Y-%m-%d %H:%i:%s') AS previsao_atendimento,
-    emp.empresa_fantasia, c.SEQCONTRATO,
+    emp.empresa_fantasia, emp.empresa_nome, c.SEQCONTRATO,
     (
       SELECT ci.CDPRODUTO
       FROM chamados_itens ci
@@ -52,6 +53,7 @@ export async function getAllOrdersRepository(
   FROM chamados c
   INNER JOIN equipamentos e ON c.CDEQUIPAMENTO = e.CDEQUIPAMENTO AND e.ID_BASE = c.ID_BASE AND e.empresa_id = c.empresa_id
   INNER JOIN defeitos d ON d.CDDEFEITO = c.CDDEFEITO AND d.ID_BASE = c.ID_BASE
+  INNER JOIN chamado_tipos t ON t.CDOSTP = c.CDOSTP AND t.ID_BASE = c.ID_BASE
   INNER JOIN empresas emp ON emp.id = c.empresa_id
   WHERE c.NMSUPORTET = '${idTecnico}'
     AND c.TFLIBERADO = 'S'
@@ -94,13 +96,15 @@ export async function getAllOrdersRepository(
       return {
         sequence: chamado.id,
         seqos: chamado.SEQOS,
+        type: chamado.NMOSTP,
         openDate: chamado.DTINCLUSAO || null,
         hourOpen: chamado.HRINCLUSAO,
         prevDate: chamado.PREVISAOATENDIMENTO,
         status: chamado.STATUS,
         cdstatus: chamado.CDSTATUS,
         cdempresa: chamado.empresa_id,
-        company: chamado.empresa_fantasia,
+        company: chamado.empresa_nome,
+        companyFantasy: chamado.empresa_fantasia,
         client: {
           code: chamado.CDCLIENTE,
           nmcliente: chamado.NMCLIENTE,

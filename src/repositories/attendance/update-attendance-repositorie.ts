@@ -78,7 +78,7 @@ export async function updateAttendance(
         motivo: '',
         motivo_outros: '',
         id_tecnico: '',
-        id_transaction: params.ID_TRANSACTION, //2
+        id_transaction: params.ID_TRANSACTION,
         ID_BASE: updatedAtendimento[0].ID_BASE,
         empresa_id: updatedAtendimento[0].empresa_id,
         create_at,
@@ -122,7 +122,7 @@ export async function updateAttendance(
         create_at,
       })
 
-      break
+      return pauseBeforeClient[0]
     }
 
     case 4: {
@@ -202,7 +202,7 @@ export async function updateAttendance(
         create_at,
       })
 
-      break
+      return pauseAfterClient[0]
     }
 
     case 6: {
@@ -279,7 +279,7 @@ export async function updateAttendance(
         create_at,
       })
 
-      return pauseInAttendace
+      return pauseInAttendace[0]
     }
 
     case 8: {
