@@ -16,15 +16,25 @@ export async function getAllOrdersRepository(
 ) {
   const { seqos, portalId, serie, patrimonio, orderByRota } = options || {}
 
-  const orderClause = orderByRota
-    ? `
+  // Se status for "O" (concluídos), ordena pelo chamado mais novo primeiro (DESC)
+  let orderClause = ''
+  if (status && status.trim() === 'O') {
+    orderClause = `
+    ORDER BY 
+      COALESCE(c.DTFECHAMENTO, '1970-01-01 00:00:00') DESC,
+      c.id DESC
+  `
+  } else if (orderByRota) {
+    orderClause = `
     ORDER BY 
       CASE 
         WHEN c.ROTA_INDEX = -1 THEN 9999
         ELSE c.ROTA_INDEX
       END ASC
   `
-    : 'ORDER BY previsao_atendimento ASC'
+  } else {
+    orderClause = 'ORDER BY previsao_atendimento ASC'
+  }
 
   const empresas = await getCompaniesByTechnical(idTecnico, idBase)
 
@@ -81,7 +91,7 @@ export async function getAllOrdersRepository(
     query += ` AND e.PATRIMONIO = '${patrimonio}'`
   }
 
-  // Ordena por ROTA_INDEX
+  // Aplica a ordenação (DTFECHAMENTO DESC para status "O", ROTA_INDEX para rota, ou previsao_atendimento ASC padrão)
   query += `
   ${orderClause}
   LIMIT 21
