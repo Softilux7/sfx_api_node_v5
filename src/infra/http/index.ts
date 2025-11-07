@@ -11,6 +11,7 @@ import { getParts } from './routes/get-linked-parts'
 import { getResumoChamados } from './routes/get-service-order-resume'
 import { getStatus } from './routes/get-status'
 import { listTypeCounters } from './routes/get-type-counters'
+import { listEquipments } from './routes/list-equipments'
 import { listVehicles } from './routes/list-vehicles'
 import { registerExpoToken } from './routes/register-expo-token'
 import { registerVehicle } from './routes/register-vehicle'
@@ -41,4 +42,5 @@ export async function registerRoutes(app: FastifyInstance) {
   app.register(updateVehicle)
   app.register(deleteVehicle)
   app.register(getParts)
+  app.register(listEquipments)
 }

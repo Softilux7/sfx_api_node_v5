@@ -122,6 +122,7 @@ export async function getAllOrdersRepository(
           code: chamado.CDCLIENTE,
           nmcliente: chamado.NMCLIENTE,
           endereco: chamado.ENDERECO,
+          complemento: chamado.COMPLEMENTO,
           bairro: chamado.BAIRRO,
           cep: chamado.CEP,
           uf: chamado.UF,
