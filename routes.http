@@ -49,9 +49,9 @@ POST {{baseUrl}}/tecnico/todos-chamados-tecnico
 Content-Type: application/json
 
 {
-  "idTecnico": "TECNICO2",
-  "idBase": 1,
-  "status": "M"
+  "idTecnico": "ROBSON",
+  "idBase": 63,
+  "status": "E"
 }
 
 ###

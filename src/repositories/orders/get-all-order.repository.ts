@@ -39,7 +39,7 @@ export async function getAllOrdersRepository(
   const empresas = await getCompaniesByTechnical(idTecnico, idBase)
 
   let query = `
-  SELECT 
+  SELECT DISTINCT
     c.id, c.SEQOS, c.CDEMPRESA, c.empresa_id,
     DATE_FORMAT(c.DTINCLUSAO, '%d/%m/%Y') AS DTINCLUSAO,
     DATE_FORMAT(STR_TO_DATE(CONCAT(c.DTPREVENTREGA, ' ', c.HRPREVENTREGA), '%Y-%m-%d %H:%i:%s'), '%d/%m/%Y %H:%i') AS PREVISAOATENDIMENTO,
