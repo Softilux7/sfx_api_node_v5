@@ -116,6 +116,7 @@ export async function getAllOrdersRepository(
         status: chamado.STATUS,
         cdstatus: chamado.CDSTATUS,
         cdempresa: chamado.empresa_id,
+        nmdefeito: chamado.NMDEFEITO,
         company: chamado.empresa_nome,
         companyFantasy: chamado.empresa_fantasia,
         client: {
