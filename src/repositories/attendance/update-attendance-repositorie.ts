@@ -579,7 +579,7 @@ export async function updateAttendance(
       break
 
     case 23: {
-      // Retorno pós atendimento
+      // Retorno pós atendimento (EMPRESA)
       await prisma.$executeRaw`
             UPDATE atendimentos
             SET 
@@ -594,12 +594,51 @@ export async function updateAttendance(
         `
 
       if (!returnBack || returnBack.length === 0) {
-        throw new BadRequest('Não foi possível atualizar o progresso [31]')
+        throw new BadRequest('Não foi possível atualizar o progresso [23]')
       }
 
       await addTimeLine({
         id_atendimento: id,
         andamento_chamado_snapshot: '23',
+        tipo_time_line: '1',
+        address: '',
+        latitute: params.LATITUDE,
+        longitute: params.LONGITUDE,
+        location_captured: 1,
+        motivo: '',
+        motivo_outros: '',
+        id_tecnico: '',
+        id_transaction: params.ID_TRANSACTION, // 11 OU 12
+        ID_BASE: returnBack[0].ID_BASE,
+        empresa_id: returnBack[0].empresa_id,
+        create_at,
+      })
+
+      return returnBack[0]
+    }
+
+    case 24: {
+      // Retorno pós atendimento (CASA)
+      await prisma.$executeRaw`
+            UPDATE atendimentos
+            SET 
+                DESTINO_POS_ATENDIMENTO_APP = ${params.DESTINO_POS_ATENDIMENTO_APP},
+                ANDAMENTO_CHAMADO_APP = 24
+            WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+        `
+
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      const returnBack: any[] = await prisma.$queryRaw`
+            SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
+        `
+
+      if (!returnBack || returnBack.length === 0) {
+        throw new BadRequest('Não foi possível atualizar o progresso [24]')
+      }
+
+      await addTimeLine({
+        id_atendimento: id,
+        andamento_chamado_snapshot: '24',
         tipo_time_line: '1',
         address: '',
         latitute: params.LATITUDE,
