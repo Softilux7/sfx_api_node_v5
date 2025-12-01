@@ -20,8 +20,8 @@ type CreateAtendimentoInput = {
   ORIGEM_CADASTRO?: string
   granted_geolocation?: number
   DESLOCAMENTO_APP?: number
-  LATITUDE?: number
-  LONGITUDE?: number
+  LATITUDE?: number | null
+  LONGITUDE?: number | null
 }
 
 export async function createAtendimentoService(input: CreateAtendimentoInput) {
@@ -93,8 +93,8 @@ export async function createAtendimentoService(input: CreateAtendimentoInput) {
     andamento_chamado_snapshot: '1',
     tipo_time_line: '1',
     address: '',
-    latitute: LATITUDE,
-    longitute: LONGITUDE,
+    latitute: LATITUDE || 0,
+    longitute: LONGITUDE || 0,
     location_captured: 1,
     motivo: '',
     motivo_outros: '',

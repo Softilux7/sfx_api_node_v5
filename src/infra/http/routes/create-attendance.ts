@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { createAtendimentoService } from '../../../repositories/attendance/create-attendance-repositorie'
 
 export async function createAtendimento(app: FastifyInstance) {
+  console.log('TESTE')
   app.withTypeProvider<ZodTypeProvider>().post(
     '/atendimentos/add',
     {
@@ -24,8 +25,8 @@ export async function createAtendimento(app: FastifyInstance) {
           ORIGEM_CADASTRO: z.string().optional(),
           granted_geolocation: z.number().optional(),
           DESLOCAMENTO_APP: z.number().optional(),
-          LATITUDE: z.number().optional(),
-          LONGITUDE: z.number().optional(),
+          LATITUDE: z.number().default(0).optional(),
+          LONGITUDE: z.number().default(0).optional(),
         }),
       },
     },
