@@ -362,11 +362,28 @@ export async function updateAttendance(
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `
 
+      // Buscar o valor atual de OBSDEFEITOATS antes de atualizar
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      const currentChamado: any[] = await prisma.$queryRaw`
+            SELECT OBSDEFEITOATS FROM chamados 
+            WHERE ID_BASE = ${ID_BASE} AND SEQOS = ${params.SEQOS}
+        `
+
+      // Concatena o valor existente com o novo FOLLOWUP
+      let obsDefeitoAts = params.FOLLOWUP || ''
+      if (
+        currentChamado.length > 0 &&
+        currentChamado[0].OBSDEFEITOATS &&
+        currentChamado[0].OBSDEFEITOATS.trim() !== ''
+      ) {
+        obsDefeitoAts = `${currentChamado[0].OBSDEFEITOATS} / ${params.FOLLOWUP || ''}`
+      }
+
       // Atualiza o status do chamado e observação defeito (follow-up)
       await prisma.$executeRaw`
             UPDATE chamados 
             SET 
-                OBSDEFEITOATS = ${params.FOLLOWUP},
+                OBSDEFEITOATS = ${obsDefeitoAts},
                 STATUS = ${params.STATUS},
                 CDSTATUS = ${params.CDSTATUS}
             WHERE ID_BASE = ${ID_BASE} AND SEQOS = ${params.SEQOS}

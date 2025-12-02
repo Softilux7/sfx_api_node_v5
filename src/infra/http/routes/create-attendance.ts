@@ -4,7 +4,6 @@ import { z } from 'zod'
 import { createAtendimentoService } from '../../../repositories/attendance/create-attendance-repositorie'
 
 export async function createAtendimento(app: FastifyInstance) {
-  console.log('TESTE')
   app.withTypeProvider<ZodTypeProvider>().post(
     '/atendimentos/add',
     {
