@@ -5,6 +5,7 @@ import {
   serializerCompiler,
   validatorCompiler,
 } from 'fastify-type-provider-zod'
+import { prisma } from '../../lib/prisma'
 import { registerRoutes } from '.'
 
 const app = fastify()
@@ -38,6 +39,11 @@ app.setErrorHandler((error, _, reply) => {
 
 // Registro de rotas
 registerRoutes(app)
+
+// Hook de shutdown para desconectar o Prisma quando o servidor encerrar
+app.addHook('onClose', async () => {
+  await prisma.$disconnect()
+})
 
 app.listen({ port: 3308, host: '0.0.0.0' }).then(() => {
   console.log('HTTP server is running!')
