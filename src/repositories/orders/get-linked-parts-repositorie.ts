@@ -28,7 +28,5 @@ export async function getLinkedParts(idBase: number, seqOs: number) {
     nmlocestoque: peca.NMLOCESTOQUE || '',
   }))
 
-  console.log('Peças vinculadas:', parts)
-
   return { parts }
 }
