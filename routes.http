@@ -1,11 +1,11 @@
-@baseUrl = http://localhost:3333
+@baseUrl = http://localhost:3308
 # @authToken = {{authenticate.response.body.accessToken}}
 
 
 ### CHAMADOS ###
 
 # @name get-linked-parts
-GET {{baseUrl}}/pecas/1/1430
+GET {{baseUrl}}/parts/1/1566
 
 ###
 
@@ -15,7 +15,7 @@ GET {{baseUrl}}/clientes/1
 ###
 
 # @name get-status
-GET {{baseUrl}}/status/:id/:idEmpresa/:idBase
+GET {{baseUrl}}/status/1/M
 
 ###
 
@@ -45,7 +45,14 @@ GET {{baseUrl}}/chamados/1054763/detail
 ###
 
 # @name get-all-service-order-technical
-GET {{baseUrl}}/tecnico/TECNICOAPP/1/M/todos-chamados-tecnico
+POST {{baseUrl}}/tecnico/todos-chamados-tecnico
+Content-Type: application/json
+
+{
+  "idTecnico": "ROBSON",
+  "idBase": 63,
+  "status": "E"
+}
 
 ###
 
@@ -128,6 +135,11 @@ GET {{baseUrl}}/history/1/orders/1430/304
 
 ###
 
+# @name get-history-attendance
+GET {{baseUrl}}/historico-equipamento/1/348
+
+###
+
 # @name send-sms
 POST {{baseUrl}}/send-sms
 Content-Type: application/json
@@ -135,3 +147,4 @@ Content-Type: application/json
 {
   "phone": "+5548984467979"
 }
+

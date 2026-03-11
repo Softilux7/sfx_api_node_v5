@@ -1,13 +1,14 @@
-import twilio from 'twilio';
-import { env } from '../env';
+import dotenv from 'dotenv'
+import twilio from 'twilio'
 
+dotenv.config()
 // As variáveis de ambiente devem ser configuradas no seu .env para segurança
-const accountSid = env.ACCOUNT;
-const authToken = env.AUTH;
+const accountSid = process.env.ACCOUNT
+const authToken = process.env.AUTH
 
 // Verifique se as credenciais estão configuradas corretamente
 if (!accountSid || !authToken) {
-  throw new Error('Twilio Account SID ou Auth Token não configurados');
+  throw new Error('Twilio Account SID ou Auth Token não configurados')
 }
 
-export const client = twilio(accountSid, authToken);
+export const client = twilio(accountSid, authToken)
