@@ -1,19 +1,19 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { updateAttendanceFn } from '@/functions/attendances/update-attendance'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { prisma } from '../../../lib/prisma'
-import { updateAttendance } from '../../../repositories/attendance/update-attendance-repositorie'
-import { BadRequest } from './@errors/bad-request'
 
-// Rota de atualização de atendimento
-export async function updateAtendimento(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().put(
+export const updateAtendimento: FastifyPluginAsyncZod = async app => {
+  app.put(
     '/atendimentos/update',
     {
       schema: {
+        tags: ['attendances'],
+        summary: 'Atualizar atendimento',
+        description:
+          'Endpoint para atualização do progresso e informações de um atendimento.',
         body: z.object({
-          id: z.number(), // Id do atendimento
-          progress: z.number(), // Progresso atual do atendimento
+          id: z.number(),
+          progress: z.number(),
           ID_BASE: z.coerce.number(),
           params: z.object({
             MOTIVO_PAUSA: z.string().optional(),
@@ -60,37 +60,20 @@ export async function updateAtendimento(app: FastifyInstance) {
         }),
       },
     },
-    async (request, reply) => {
+    async request => {
       const { id, progress, ID_BASE, params } = request.body
 
-      try {
-        // Verifica se o atendimento existe
-        const atendimento = await prisma.atendimentos.findUnique({
-          where: { id },
-        })
+      const updatedAttendance = await updateAttendanceFn(
+        id,
+        ID_BASE,
+        progress,
+        params
+      )
 
-        if (!atendimento) {
-          throw new BadRequest('Atendimento não encontrado.')
-        }
-
-        const updatedAttendance = await updateAttendance(
-          id,
-          ID_BASE,
-          progress,
-          params
-        )
-
-        return reply.send({
-          success: true,
-          message: `Progresso de atendimento atualizado: ${progress}`,
-          updatedAttendance,
-        })
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      } catch (error: any) {
-        console.error('Erro ao atualizar atendimento:', error.message)
-        return reply
-          .status(400)
-          .send({ success: false, message: error.message })
+      return {
+        success: true,
+        message: `Progresso de atendimento atualizado: ${progress}`,
+        updatedAttendance,
       }
     }
   )

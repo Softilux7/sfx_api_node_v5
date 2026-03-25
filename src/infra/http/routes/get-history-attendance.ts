@@ -1,14 +1,16 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { getHistoryAtendimentoFn } from '@/functions/attendances/get-history-attendance'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { getHistoryAtendimentoRepository } from '../../../repositories/attendance/get-history-attendance-repositorie'
 
-// Rota de busca do histórico de atendimentos da OS
-export async function getHistoryAttendance(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().get(
+export const getHistoryAttendance: FastifyPluginAsyncZod = async app => {
+  app.get(
     '/historico/:idBase/:idChamado',
     {
       schema: {
+        tags: ['attendances'],
+        summary: 'Histórico de atendimentos da OS',
+        description:
+          'Endpoint para buscar o histórico de atendimentos vinculados a um chamado.',
         params: z.object({
           idChamado: z.coerce.number(),
           idBase: z.coerce.number(),
@@ -18,7 +20,7 @@ export async function getHistoryAttendance(app: FastifyInstance) {
     async request => {
       const { idChamado, idBase } = request.params
 
-      const result = await getHistoryAtendimentoRepository(idChamado, idBase)
+      const result = await getHistoryAtendimentoFn(idChamado, idBase)
 
       return result
     }

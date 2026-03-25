@@ -1,14 +1,15 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { sendNotificationFn } from '@/functions/notifications/send-notification'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { sendNotificationRepository } from '../../../repositories/notifications/get-expo-notification-token'
 
-// Rota de envio de notificações
-export async function sendNotificationRoute(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().post(
+export const sendNotificationRoute: FastifyPluginAsyncZod = async app => {
+  app.post(
     '/send-notification',
     {
       schema: {
+        tags: ['notifications'],
+        summary: 'Enviar notificação push',
+        description: 'Envia uma notificação push para o técnico via Expo.',
         body: z.object({
           idEmpresa: z.number(),
           message: z.string(),
@@ -20,14 +21,14 @@ export async function sendNotificationRoute(app: FastifyInstance) {
     async request => {
       const { idEmpresa, message, data, tecnicoId } = request.body
 
-      const result = await sendNotificationRepository(
+      const result = await sendNotificationFn(
         idEmpresa,
         tecnicoId,
         message,
         data
       )
 
-      return result
+      return { success: result.success, data: result }
     }
   )
 }

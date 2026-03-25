@@ -1,14 +1,15 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { listVehiclesFn } from '@/functions/vehicles/list-vehicles'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { listVehiclePlatesRepositorie } from '../../../repositories/vehicles/list-vehicles-repositorie'
 
-// Rota de listagem dos veículos cadastrados
-export async function listVehicles(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().get(
+export const listVehicles: FastifyPluginAsyncZod = async app => {
+  app.get(
     '/vehicles/:idBase',
     {
       schema: {
+        tags: ['vehicles'],
+        summary: 'Listar veículos',
+        description: 'Retorna todos os veículos cadastrados para a base.',
         params: z.object({
           idBase: z.coerce.number(),
         }),
@@ -17,9 +18,9 @@ export async function listVehicles(app: FastifyInstance) {
     async request => {
       const { idBase } = request.params
 
-      const status = await listVehiclePlatesRepositorie(idBase)
+      const data = await listVehiclesFn(idBase)
 
-      return status
+      return { success: true, data }
     }
   )
 }

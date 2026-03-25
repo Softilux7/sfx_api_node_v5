@@ -1,14 +1,16 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
-import z from 'zod'
-import { getAllOrdersRepository } from '../../../repositories/orders/get-all-order.repository'
+import { getAllOrdersFn } from '@/functions/orders/get-all-orders'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
+import { z } from 'zod'
 
-// Rota de busca por O.S do técnico (POST)
-export async function getAllServiceOrderTechnical(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().post(
+export const getAllServiceOrderTechnical: FastifyPluginAsyncZod = async app => {
+  app.post(
     '/tecnico/todos-chamados-tecnico',
     {
       schema: {
+        tags: ['orders'],
+        summary: 'Listar chamados do técnico',
+        description:
+          'Endpoint para buscar todos os chamados vinculados a um técnico, com possibilidade de filtros.',
         body: z.object({
           idTecnico: z.string(),
           idBase: z.coerce.number(),
@@ -33,7 +35,7 @@ export async function getAllServiceOrderTechnical(app: FastifyInstance) {
         orderByRota,
       } = request.body
 
-      const data = await getAllOrdersRepository(idTecnico, idBase, status, {
+      const data = await getAllOrdersFn(idTecnico, idBase, status, {
         seqos,
         portalId,
         serie,
@@ -41,7 +43,10 @@ export async function getAllServiceOrderTechnical(app: FastifyInstance) {
         orderByRota,
       })
 
-      return { success: true, chamados: data }
+      return {
+        success: true,
+        chamados: data,
+      }
     }
   )
 }

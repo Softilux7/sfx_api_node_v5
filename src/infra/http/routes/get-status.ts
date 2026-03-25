@@ -1,14 +1,16 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { getStatusFn } from '@/functions/orders/get-status'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { getStatusRepository } from '../../../repositories/orders/get-status-repositorie'
 
-// Rota de busca por status da empresa
-export async function getStatus(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().get(
+export const getStatus: FastifyPluginAsyncZod = async app => {
+  app.get(
     '/status/:idEmpresa',
     {
       schema: {
+        tags: ['orders'],
+        summary: 'Listar status da empresa',
+        description:
+          'Endpoint para buscar os status disponíveis de ordens de serviço de uma empresa.',
         params: z.object({
           idEmpresa: z.coerce.number(),
         }),
@@ -17,7 +19,7 @@ export async function getStatus(app: FastifyInstance) {
     async request => {
       const { idEmpresa } = request.params
 
-      const status = await getStatusRepository(idEmpresa)
+      const status = await getStatusFn(idEmpresa)
 
       return status
     }

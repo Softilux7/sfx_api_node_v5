@@ -1,13 +1,15 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { createAttendaceFn } from '@/functions/attendances/create-attendance'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { createAtendimentoService } from '../../../repositories/attendance/create-attendance-repositorie'
 
-export async function createAtendimento(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().post(
+export const createAtendimento: FastifyPluginAsyncZod = async app => {
+  app.post(
     '/atendimentos/add',
     {
       schema: {
+        tags: ['attendances'],
+        summary: 'Criar atendimento',
+        description: 'Endpoint para criação de um novo atendimento.',
         body: z.object({
           SEQOS: z.number(),
           CDSTATUS: z.string(),
@@ -29,20 +31,13 @@ export async function createAtendimento(app: FastifyInstance) {
         }),
       },
     },
-    async (request, reply) => {
-      try {
-        const atendimento = await createAtendimentoService(request.body)
-        return reply.send({
-          success: true,
-          message: 'Atendimento criado com sucesso!',
-          atendimento,
-        })
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      } catch (error: any) {
-        console.error('Erro ao criar atendimento:', error.message)
-        return reply
-          .status(500)
-          .send({ success: false, message: error.message })
+    async request => {
+      const atendimento = await createAttendaceFn(request.body)
+
+      return {
+        success: true,
+        message: 'Atendimento criado com sucesso!',
+        atendimento,
       }
     }
   )

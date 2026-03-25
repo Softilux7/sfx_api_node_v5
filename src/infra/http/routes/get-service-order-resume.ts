@@ -1,14 +1,16 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { getResumoChamadosFn } from '@/functions/orders/get-service-order-resume'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { getResumoChamadosRepository } from '../../../repositories/orders/get-service-order-resume'
 
-// Rota de busca da quantidade de status de OS (*Dashboard grid)
-export async function getResumoChamados(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().get(
+export const getResumoChamados: FastifyPluginAsyncZod = async app => {
+  app.get(
     '/tecnicos/:tecnicoId/:idBase/resumo-chamados',
     {
       schema: {
+        tags: ['orders'],
+        summary: 'Resumo de chamados do técnico',
+        description:
+          'Endpoint para obter o resumo de chamados por status de um técnico (utilizado no dashboard).',
         params: z.object({
           tecnicoId: z.string(),
           idBase: z.coerce.number(),
@@ -17,10 +19,13 @@ export async function getResumoChamados(app: FastifyInstance) {
     },
     async request => {
       const { tecnicoId, idBase } = request.params
-      
-      const data = await getResumoChamadosRepository(tecnicoId, idBase)
 
-      return { success: true, data }
+      const data = await getResumoChamadosFn(tecnicoId, idBase)
+
+      return {
+        success: true,
+        data,
+      }
     }
   )
 }

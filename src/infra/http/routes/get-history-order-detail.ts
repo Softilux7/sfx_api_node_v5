@@ -1,29 +1,35 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { getOrdersHistoryDetailsFn } from '@/functions/orders/get-history-order-details'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { getOrdersHistoryDetails } from '../../../repositories/orders/get-history-order-details-repositorie'
 
-// Rota de busca por detalhes de um histórico de chamado do equipamento
-export async function getHistoryEquipmentsOrdersDetails(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().get(
-    '/historico-equipamento-detalhes/:idBase/:sequence',
-    {
-      schema: {
-        params: z.object({
-          idBase: z.coerce.number(),
-          sequence: z.coerce.number(),
-        }),
+export const getHistoryEquipmentsOrdersDetails: FastifyPluginAsyncZod =
+  async app => {
+    app.get(
+      '/historico-equipamento-detalhes/:idBase/:sequence',
+      {
+        schema: {
+          tags: ['orders'],
+          summary: 'Detalhes do histórico de chamados do equipamento',
+          description:
+            'Endpoint para buscar os detalhes de um histórico de chamado relacionado a um equipamento.',
+          params: z.object({
+            idBase: z.coerce.number(),
+            sequence: z.coerce.number(),
+          }),
+        },
       },
-    },
-    async request => {
-      const { idBase, sequence } = request.params
+      async request => {
+        const { idBase, sequence } = request.params
 
-      const ordersHistoryDetails = await getOrdersHistoryDetails(
-        idBase,
-        sequence
-      )
+        const ordersHistoryDetails = await getOrdersHistoryDetailsFn(
+          idBase,
+          sequence
+        )
 
-      return { success: true, data: ordersHistoryDetails }
-    }
-  )
-}
+        return {
+          success: true,
+          data: ordersHistoryDetails,
+        }
+      }
+    )
+  }

@@ -1,14 +1,15 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { listEquipmentsFn } from '@/functions/equipments/list-equipments'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { listEquipmentsRepository } from '../../../repositories/equipments/list-equipments-repositorie'
 
-// Rota para buscar equipamentos da empresa com filtros opcionais
-export async function listEquipments(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().post(
+export const listEquipments: FastifyPluginAsyncZod = async app => {
+  app.post(
     '/equipments/search',
     {
       schema: {
+        tags: ['equipments'],
+        summary: 'Buscar equipamentos',
+        description: 'Busca equipamentos da empresa com filtros opcionais.',
         body: z.object({
           idBase: z.coerce.number(),
           cdequipamento: z.coerce.number().optional(),
@@ -20,17 +21,16 @@ export async function listEquipments(app: FastifyInstance) {
         }),
       },
     },
-
     async request => {
-      const equipamentos = await listEquipmentsRepository(request.body)
+      const data = await listEquipmentsFn(request.body)
 
       return {
         success: true,
+        data,
         message:
-          equipamentos.length > 0
+          data.length > 0
             ? 'Equipamentos encontrados'
             : 'Nenhum equipamento encontrado',
-        equipamentos,
       }
     }
   )

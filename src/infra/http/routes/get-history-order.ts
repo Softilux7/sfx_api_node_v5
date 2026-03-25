@@ -1,14 +1,16 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { getOrdersHistoryFn } from '@/functions/orders/get-history-order'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { getOrdersHistory } from '../../../repositories/orders/get-history-order-repositorie'
 
-// Rota de busca por histórico de chamados do equipamento
-export async function getHistoryEquipmentsOrders(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().get(
+export const getHistoryEquipmentsOrders: FastifyPluginAsyncZod = async app => {
+  app.get(
     '/historico-equipamento/:idBase/:cdequipamento',
     {
       schema: {
+        tags: ['orders'],
+        summary: 'Histórico de chamados do equipamento',
+        description:
+          'Endpoint para buscar o histórico de chamados vinculados a um equipamento.',
         params: z.object({
           idBase: z.coerce.number(),
           cdequipamento: z.coerce.number(),
@@ -18,9 +20,12 @@ export async function getHistoryEquipmentsOrders(app: FastifyInstance) {
     async request => {
       const { idBase, cdequipamento } = request.params
 
-      const ordersHistory = await getOrdersHistory(idBase, cdequipamento)
+      const ordersHistory = await getOrdersHistoryFn(idBase, cdequipamento)
 
-      return { success: true, data: ordersHistory }
+      return {
+        success: true,
+        data: ordersHistory,
+      }
     }
   )
 }

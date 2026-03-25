@@ -1,13 +1,16 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { getLinkedPartsFn } from '@/functions/orders/get-linked-parts'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { getLinkedParts } from '../../../repositories/orders/get-linked-parts-repositorie'
 
-export async function getParts(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().get(
+export const getParts: FastifyPluginAsyncZod = async app => {
+  app.get(
     '/parts/:idBase/:seqos',
     {
       schema: {
+        tags: ['orders'],
+        summary: 'Peças vinculadas à O.S',
+        description:
+          'Endpoint para buscar as peças vinculadas a uma ordem de serviço.',
         params: z.object({
           idBase: z.coerce.number(),
           seqos: z.coerce.number(),
@@ -17,7 +20,7 @@ export async function getParts(app: FastifyInstance) {
     async request => {
       const { idBase, seqos } = request.params
 
-      const status = await getLinkedParts(idBase, seqos)
+      const status = await getLinkedPartsFn(idBase, seqos)
 
       return status
     }

@@ -1,14 +1,15 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { registerExpoTokenFn } from '@/functions/notifications/register-expo-token'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { registerExpoTokenRepository } from '../../../repositories/notifications/register-expo-token-repository'
 
-// Rota de registro de token (notificação expo)
-export async function registerExpoToken(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().post(
+export const registerExpoToken: FastifyPluginAsyncZod = async app => {
+  app.post(
     '/register-expo-token',
     {
       schema: {
+        tags: ['notifications'],
+        summary: 'Registrar token de notificação',
+        description: 'Registra o token Expo Push para envio de notificações.',
         body: z.object({
           idEmpresa: z.number(),
           tecnicoId: z.string(),
@@ -19,13 +20,9 @@ export async function registerExpoToken(app: FastifyInstance) {
     async request => {
       const { idEmpresa, tecnicoId, token } = request.body
 
-      const result = await registerExpoTokenRepository(
-        idEmpresa,
-        tecnicoId,
-        token
-      )
+      const data = await registerExpoTokenFn(idEmpresa, tecnicoId, token)
 
-      return result
+      return { success: data.success, data, message: data.message }
     }
   )
 }

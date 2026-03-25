@@ -1,14 +1,15 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { registerVehicleFn } from '@/functions/vehicles/register-vehicle'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { registerVehicleRepositorie } from '../../../repositories/vehicles/register-vehicle-repositorie'
 
-// Rota de criação de veículos
-export async function registerVehicle(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().post(
+export const registerVehicle: FastifyPluginAsyncZod = async app => {
+  app.post(
     '/register-vehicle',
     {
       schema: {
+        tags: ['vehicles'],
+        summary: 'Registrar veículo',
+        description: 'Endpoint para cadastro de um novo veículo.',
         body: z.object({
           idBase: z.coerce.number(),
           tecnicoId: z.string(),
@@ -18,10 +19,10 @@ export async function registerVehicle(app: FastifyInstance) {
         }),
       },
     },
-    async request => {
+    async (request, reply) => {
       const { idBase, tecnicoId, placa, nomeVeiculo, km } = request.body
 
-      const result = await registerVehicleRepositorie(
+      const data = await registerVehicleFn(
         idBase,
         tecnicoId,
         nomeVeiculo,
@@ -29,7 +30,11 @@ export async function registerVehicle(app: FastifyInstance) {
         km
       )
 
-      return result
+      return reply.status(201).send({
+        success: true,
+        data,
+        message: data.message,
+      })
     }
   )
 }

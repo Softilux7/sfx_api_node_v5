@@ -1,14 +1,15 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { deleteVehicleFn } from '@/functions/vehicles/delete-vehicle'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { deleteVehicleRepository } from '../../../repositories/vehicles/delete-vehicle-repository' // nome que usamos na função
 
-// Rota para deletar um veículo da base de dados
-export async function deleteVehicle(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().delete(
+export const deleteVehicle: FastifyPluginAsyncZod = async app => {
+  app.delete(
     '/delete-vehicle',
     {
       schema: {
+        tags: ['vehicles'],
+        summary: 'Deletar veículo',
+        description: 'Endpoint para remoção de um veículo cadastrado.',
         body: z.object({
           idBase: z.coerce.number(),
           placa: z.string(),
@@ -18,9 +19,9 @@ export async function deleteVehicle(app: FastifyInstance) {
     async request => {
       const { idBase, placa } = request.body
 
-      const result = await deleteVehicleRepository(idBase, placa)
+      const data = await deleteVehicleFn(idBase, placa)
 
-      return result
+      return { success: true, data, message: data.message }
     }
   )
 }

@@ -1,14 +1,16 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { updateVehicleFn } from '@/functions/vehicles/update-vehicle'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { updateVehicleRepository } from '../../../repositories/vehicles/update-vehicle-repository'
 
-// Rota de atualização de dados do veículo
-export async function updateVehicle(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().put(
+export const updateVehicle: FastifyPluginAsyncZod = async app => {
+  app.put(
     '/update-vehicle',
     {
       schema: {
+        tags: ['vehicles'],
+        summary: 'Atualizar quilometragem do veículo',
+        description:
+          'Endpoint para atualização da quilometragem de um veículo.',
         body: z.object({
           idBase: z.coerce.number(),
           placa: z.string(),
@@ -19,9 +21,9 @@ export async function updateVehicle(app: FastifyInstance) {
     async request => {
       const { idBase, placa, km } = request.body
 
-      const result = await updateVehicleRepository(idBase, placa, km)
+      const data = await updateVehicleFn(idBase, placa, km)
 
-      return result
+      return { success: true, data, message: data.message }
     }
   )
 }

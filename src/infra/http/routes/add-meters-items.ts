@@ -1,15 +1,18 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { addAtendimentoMetersFn } from '@/functions/attendances/add-attendance-meters'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { addAtendimentoMetersService } from '../../../repositories/attendance/add-attendance-meters'
 
-export async function addAtendimentoMeters(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().post(
+export const addAtendimentoMeters: FastifyPluginAsyncZod = async app => {
+  app.post(
     '/atendimentos-medidores/add',
     {
       schema: {
+        tags: ['attendances'],
+        summary: 'Adicionar medidores ao atendimento',
+        description:
+          'Endpoint para registrar ou atualizar os medidores vinculados a um atendimento.',
         body: z.object({
-          id: z.number(), // Id do atendimento
+          id: z.number(),
           ID_BASE: z.coerce.number(),
           empresa_id: z.coerce.number(),
           cdequipamento: z.number(),
@@ -23,20 +26,12 @@ export async function addAtendimentoMeters(app: FastifyInstance) {
         }),
       },
     },
-    async (request, reply) => {
-      try {
-        await addAtendimentoMetersService(request.body)
+    async request => {
+      await addAtendimentoMetersFn(request.body)
 
-        return reply.send({
-          success: true,
-          message: 'Medidores atualizados',
-        })
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      } catch (error: any) {
-        console.error('Erro ao adicionar medidores:', error.message)
-        return reply
-          .status(500)
-          .send({ success: false, message: error.message })
+      return {
+        success: true,
+        message: 'Medidores atualizados',
       }
     }
   )

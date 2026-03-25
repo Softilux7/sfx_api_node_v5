@@ -1,27 +1,33 @@
-import type { FastifyInstance } from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
+import { getTypeCountersFn } from '@/functions/equipments/get-type-counters'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { getTypeCounters } from '../../../repositories/equipments/get-type-counters-repositorie'
 
-// Rota de busca para os tipos de medidores do equipamento
-export async function listTypeCounters(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().get(
+export const listTypeCounters: FastifyPluginAsyncZod = async app => {
+  app.get(
     '/tecnicos/:idBase/:cdEquipamento/lista-tipo-medidor-contrato',
     {
       schema: {
+        tags: ['equipments'],
+        summary: 'Listar tipos de medidores do equipamento',
+        description:
+          'Endpoint para buscar os tipos de medidores vinculados ao contrato de um equipamento.',
         params: z.object({
           idBase: z.coerce.number(),
           cdEquipamento: z.coerce.number(),
         }),
       },
     },
-
     async request => {
       const { idBase, cdEquipamento } = request.params
 
-      const counters = await getTypeCounters(idBase, cdEquipamento)
+      const counters = await getTypeCountersFn(idBase, cdEquipamento)
 
-      return { success: true, data: { counters: counters.join(',') } }
+      return {
+        success: true,
+        data: {
+          counters: counters.join(','),
+        },
+      }
     }
   )
 }
