@@ -3,7 +3,7 @@ module.exports = {
         {
             name: 'API_APP',
             script: 'build/infra/http/server.js',
-            interpreter: "~/.nvm/versions/node/v20.11.0/bin/node",
+            interpreter: "~/.nvm/versions/node/v22.22.2/bin/node",
             env: {
                 NODE_ENV: 'prod',
                 DATABASE_URL: 'mysql://softilux:YceHw7WC5usvP1%23mLtST@10.180.0.8:3306/pws',
