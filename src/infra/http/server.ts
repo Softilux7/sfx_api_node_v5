@@ -85,6 +85,6 @@ app.addHook('onClose', async () => {
   await prisma.$disconnect()
 })
 
-app.listen({ port: 3308, host: '0.0.0.0' }).then(() => {
+app.listen({ port: env.PORT, host: '0.0.0.0' }).then(() => {
   console.log(`Servidor rodando em http://localhost:${env.PORT}`)
 })

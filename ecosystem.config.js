@@ -7,7 +7,7 @@ module.exports = {
             env: {
                 NODE_ENV: 'prod',
                 DATABASE_URL: 'mysql://softilux:YceHw7WC5usvP1%23mLtST@10.180.0.8:3306/pws',
-                PORT: 3308,
+                PORT: 3309,
                 ACCOUNT: 'ACe03fc6282bb0c24b829c28dfdcfd6043',
                 AUTH: '5338c9ad4eb5e895bd1dbaae2bc16608',
             },
