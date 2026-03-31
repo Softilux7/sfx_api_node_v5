@@ -3,7 +3,7 @@ module.exports = {
         {
             name: 'API_APP_2',
             script: 'build/infra/http/server.js',
-            interpreter: "~/.nvm/versions/node/v22.22.2/bin/node",
+            interpreter: "/home/softilux/.nvm/versions/node/v22.22.2/bin/node",
             env: {
                 NODE_ENV: 'prod',
                 DATABASE_URL: 'mysql://softilux:YceHw7WC5usvP1%23mLtST@10.180.0.8:3306/pws',
@@ -14,7 +14,6 @@ module.exports = {
             log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
             merge_logs: true,
             instances: 1,
-            exec_interpreter: 'node',
             exec_mode: 'cluster',
             autorestart: true,
             max_memory_restart: '1200M',

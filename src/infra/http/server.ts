@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import fastifyCors from '@fastify/cors'
 import fastifyMultipart from '@fastify/multipart'
 import fastifySwagger from '@fastify/swagger'
-// import scalarFastifyApiReference from '@scalar/fastify-api-reference'
+import scalarFastifyApiReference from '@scalar/fastify-api-reference'
 import fastify from 'fastify'
 import {
   jsonSchemaTransform,
@@ -45,12 +45,12 @@ if (env.NODE_ENV !== 'production') {
     transform: jsonSchemaTransform,
   })
 
-  // app.register(scalarFastifyApiReference, {
-  //   routePrefix: '/docs',
-  //   configuration: {
-  //     theme: 'moon',
-  //   },
-  // })
+  app.register(scalarFastifyApiReference, {
+    routePrefix: '/docs',
+    configuration: {
+      theme: 'moon',
+    },
+  })
 }
 
 app.setErrorHandler((error, _request, reply) => {
