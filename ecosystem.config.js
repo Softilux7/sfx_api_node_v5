@@ -1,7 +1,7 @@
 module.exports = {
     apps: [
         {
-            name: 'API_APP',
+            name: 'API_APP_2',
             script: 'build/infra/http/server.js',
             interpreter: "~/.nvm/versions/node/v22.22.2/bin/node",
             env: {
