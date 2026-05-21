@@ -546,7 +546,10 @@ export async function updateAttendanceFn(
         await prisma.$executeRaw`
             UPDATE chamados
             SET
-                ATUALIZADO = 2
+                ATUALIZADO = 2,
+                DTFECHAMENTO = ${create_at},
+                DTATENDIMENTO = ${updatedAttendance[0].DTATENDIMENTO},
+                HRATENDIMENTO = ${updatedAttendance[0].HRATENDIMENTO}
             WHERE ID_BASE = ${updatedAttendance[0].ID_BASE} AND SEQOS = ${updatedAttendance[0].SEQOS}
         `
 
