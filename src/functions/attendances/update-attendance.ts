@@ -548,8 +548,7 @@ export async function updateAttendanceFn(
             SET
                 ATUALIZADO = 2,
                 DTFECHAMENTO = ${create_at},
-                DTATENDIMENTO = ${updatedAttendance[0].DTATENDIMENTO},
-                HRATENDIMENTO = ${updatedAttendance[0].HRATENDIMENTO}
+                DTATENDIMENTO = ${updatedAttendance[0].DTATENDIMENTO}
             WHERE ID_BASE = ${updatedAttendance[0].ID_BASE} AND SEQOS = ${updatedAttendance[0].SEQOS}
         `
 
