@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import fastifyCors from '@fastify/cors'
+import fastifyJwt from '@fastify/jwt'
 import fastifyMultipart from '@fastify/multipart'
 import fastifySwagger from '@fastify/swagger'
 import scalarFastifyApiReference from '@scalar/fastify-api-reference'
@@ -15,6 +16,16 @@ import { env } from './env'
 import { AppError } from './error'
 
 const app = fastify()
+
+app.register(fastifyJwt, { secret: env.JWT_SECRET })
+
+// app.decorate('authenticate', async (request: any, reply: any) => {
+//   try {
+//     await request.jwtVerify()
+//   } catch {
+//     throw new AppError('Token inválido ou expirado.', 401)
+//   }
+// })
 
 app.register(fastifyMultipart, {
   limits: {

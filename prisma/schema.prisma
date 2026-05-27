@@ -76,6 +76,20 @@ model app_atendimento_timeline {
   @@index([ID_BASE, empresa_id, id_atendimento], map: "index_app")
 }
 
+model app_subs {
+  id              Int       @id @default(autoincrement())
+  user_id         Int
+  device_id       String    @db.VarChar(255)
+  android_version String    @db.VarChar(20)
+  app_version     String?   @db.VarChar(20)
+  status          String    @default("S") @db.Char(1)
+  created_at      DateTime  @default(now()) @db.Timestamp(0)
+  last_access     DateTime? @db.DateTime(0)
+  authorized_at   DateTime? @db.DateTime(0)
+
+  @@index([user_id, device_id], map: "idx_user_device")
+}
+
 model app_auth {
   id                    Int       @id @default(autoincrement())
   user_id               Int?

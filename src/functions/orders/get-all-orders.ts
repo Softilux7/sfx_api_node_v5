@@ -107,6 +107,7 @@ export async function getAllOrdersFn(
         sequence: chamado.id,
         seqos: chamado.SEQOS,
         type: chamado.NMOSTP,
+        contact: chamado.CONTATO,
         openDate: chamado.DTINCLUSAO || null,
         hourOpen: chamado.HRINCLUSAO,
         prevDate: chamado.PREVISAOATENDIMENTO,
