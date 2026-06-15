@@ -8,11 +8,23 @@ interface SessionParams {
   appVersion: string
 }
 
+interface UserLicenseRow {
+  app_license: string
+}
+
 interface AppSubsRow {
   status: string
 }
 
 export async function sessionFn({ userId, deviceId, androidVersion, appVersion }: SessionParams) {
+  const [license] = await prisma.$queryRaw<UserLicenseRow[]>`
+    SELECT app_license FROM users WHERE id = ${userId} LIMIT 1
+  `
+
+  if (!license || license.app_license !== 'S') {
+    throw new AppError('Acesso negado: você não adquiriu uma licença de uso do aplicativo.', 403)
+  }
+
   const subs = await prisma.$queryRaw<AppSubsRow[]>`
     SELECT status
     FROM app_subs

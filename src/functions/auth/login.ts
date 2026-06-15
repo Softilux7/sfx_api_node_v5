@@ -15,6 +15,7 @@ interface UserRow {
   empresa_id: number | null
   tecnico_id: string | null
   empresa_logo: string | null
+  filial_id: number | null
 }
 
 export async function loginFn({ email, passwordHash }: LoginParams) {
@@ -26,6 +27,7 @@ export async function loginFn({ email, passwordHash }: LoginParams) {
       u.user_password,
       u.empresa_id,
       u.tecnico_id,
+      u.filial_id,
       e.logo AS empresa_logo
     FROM users u
     LEFT JOIN empresas e ON e.id = u.empresa_id
@@ -55,5 +57,6 @@ export async function loginFn({ email, passwordHash }: LoginParams) {
     empresaId: user.empresa_id,
     tecnicoId: user.tecnico_id,
     empresaLogo: user.empresa_logo,
+    filialId: user.filial_id,
   }
 }

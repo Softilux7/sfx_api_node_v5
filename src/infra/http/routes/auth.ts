@@ -26,7 +26,7 @@ export const authRoute: FastifyPluginAsyncZod = async app => {
 
       const user = await loginFn({ email: user_email, passwordHash: password_hash })
 
-      // Valida/cria o registro de licença — lança 403 se device estiver bloqueado
+      // Valida app_license + cria/valida licença do dispositivo — lança 403 se bloqueado
       await sessionFn({
         userId: user.id,
         deviceId: device_id,
@@ -52,6 +52,7 @@ export const authRoute: FastifyPluginAsyncZod = async app => {
           base: user.empresaId,
           tecnicoId: user.tecnicoId,
           logo: user.empresaLogo,
+          filial: user.filialId,
         },
       })
     }
