@@ -87,7 +87,7 @@ model app_subs {
   last_access     DateTime? @db.DateTime(0)
   authorized_at   DateTime? @db.DateTime(0)
 
-  @@unique([user_id, device_id], map: "idx_user_device")
+  @@index([user_id, device_id], map: "idx_user_device")
 }
 
 model app_auth {
