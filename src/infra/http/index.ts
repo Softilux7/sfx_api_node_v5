@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify'
 import { addAtendimentoMeters } from './routes/add-meters-items'
 import { authRoute } from './routes/auth'
-import { checkLicenseRoute } from './routes/check-license'
-import { sessionRoute } from './routes/session'
+import { createLicenseRoute } from './routes/create-license'
+import { validateLicenseRoute } from './routes/validate-license'
 import { createAtendimento } from './routes/create-attendance'
 import { deleteVehicle } from './routes/delete-vehicle'
 import { getAllEquipmentMeters } from './routes/get-all-equipment-meters'
@@ -26,8 +26,8 @@ import { uploadPhotos } from './routes/upload-photos'
 
 export async function registerRoutes(app: FastifyInstance) {
   app.register(authRoute)
-  app.register(sessionRoute)
-  app.register(checkLicenseRoute)
+  app.register(createLicenseRoute)
+  app.register(validateLicenseRoute)
   app.register(getAllServiceOrderTechnical)
   app.register(registerExpoToken)
   app.register(sendNotificationRoute)

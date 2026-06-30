@@ -1,5 +1,6 @@
 import { loginFn } from '@/functions/auth/login'
-import { sessionFn } from '@/functions/app-subs/session'
+import { validateLicenseFn } from '@/functions/license/validate-license'
+import { createLicenseFn } from '@/functions/license/create-license'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 
@@ -18,20 +19,26 @@ export const authRoute: FastifyPluginAsyncZod = async app => {
           device_id: z.string().min(1),
           android_version: z.string().min(1),
           app_version: z.string().min(1),
+          id_base: z.number().int(),
         }),
       },
     },
     async (request, reply) => {
-      const { user_email, password_hash, device_id, android_version, app_version } = request.body
+      const { user_email, password_hash, device_id, android_version, app_version, id_base } =
+        request.body
 
       const user = await loginFn({ email: user_email, passwordHash: password_hash })
 
-      // Valida app_license + cria/valida licença do dispositivo — lança 403 se bloqueado
-      await sessionFn({
+      // Valida app_license — lança 403 NOT_AUTHORIZED se estiver como N
+      await validateLicenseFn({ userId: user.id })
+
+      // Registra/atualiza a licença do dispositivo em app_subs
+      await createLicenseFn({
         userId: user.id,
         deviceId: device_id,
         androidVersion: android_version,
         appVersion: app_version,
+        idBase: id_base,
       })
 
       const token = app.jwt.sign(

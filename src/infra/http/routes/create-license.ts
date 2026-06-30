@@ -1,35 +1,37 @@
-import { sessionFn } from '@/functions/app-subs/session'
+import { createLicenseFn } from '@/functions/license/create-license'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 
-export const sessionRoute: FastifyPluginAsyncZod = async app => {
+export const createLicenseRoute: FastifyPluginAsyncZod = async app => {
   app.post(
-    '/session',
+    '/license',
     {
       schema: {
         tags: ['app-auth'],
-        summary: 'Sessão do app',
+        summary: 'Registrar licença',
         description:
-          'Verifica se o dispositivo está autorizado. Cria o registro na primeira vez (acesso liberado por padrão). Retorna 403 se o acesso foi bloqueado manualmente.',
+          'Registra o dispositivo em app_subs. Cria o registro na primeira vez e atualiza dados/último acesso nas seguintes.',
         body: z.object({
           user_id: z.number().int(),
           device_id: z.string().min(1),
           android_version: z.string().min(1),
           app_version: z.string().min(1),
+          id_base: z.number().int(),
         }),
       },
     },
     async request => {
-      const { user_id, device_id, android_version, app_version } = request.body
+      const { user_id, device_id, android_version, app_version, id_base } = request.body
 
-      const data = await sessionFn({
+      const data = await createLicenseFn({
         userId: user_id,
         deviceId: device_id,
         androidVersion: android_version,
         appVersion: app_version,
+        idBase: id_base,
       })
 
-      return { authorized: data.authorized, status: data.status }
+      return { created: data.created }
     }
   )
 }

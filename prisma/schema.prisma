@@ -82,12 +82,12 @@ model app_subs {
   device_id       String    @db.VarChar(255)
   android_version String    @db.VarChar(20)
   app_version     String?   @db.VarChar(20)
-  status          String    @default("S") @db.Char(1)
+  id_base         Int?
   created_at      DateTime  @default(now()) @db.Timestamp(0)
   last_access     DateTime? @db.DateTime(0)
   authorized_at   DateTime? @db.DateTime(0)
 
-  @@index([user_id, device_id], map: "idx_user_device")
+  @@unique([user_id, device_id], map: "idx_user_device")
 }
 
 model app_auth {
@@ -1360,6 +1360,7 @@ model users {
   android_version         Int?
   fcm_token_device        String?   @db.VarChar(255)
   token                   String    @default("") @db.VarChar(256)
+  app_license             String?   @db.Char(1)
   dashboard_monitoramento Int       @default(0)
   token_2                 String?   @db.VarChar(256)
   validate_token_2        DateTime? @db.DateTime(0)
