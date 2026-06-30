@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { validateLicenseFn } from './validate-license'
 
 interface CreateLicenseParams {
   userId: number
@@ -19,6 +20,10 @@ export async function createLicenseFn({
   appVersion,
   idBase,
 }: CreateLicenseParams) {
+  // Bloqueia o registro quando a licença não está ativa (app_license != S),
+  // evitando criar/atualizar app_subs para quem está com NOT_AUTHORIZED.
+  await validateLicenseFn({ userId })
+
   // Verifica na própria função se já existe registro para o par (user_id, device_id).
   const existing = await prisma.$queryRaw<AppSubsRow[]>`
     SELECT id
