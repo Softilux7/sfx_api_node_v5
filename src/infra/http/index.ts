@@ -22,6 +22,7 @@ import { sendNotificationRoute } from './routes/send-notification'
 import { sendSMS } from './routes/send-sms'
 import { updateAtendimento } from './routes/update-attendance'
 import { updateVehicle } from './routes/update-vehicle'
+import { updateVehicleData } from './routes/update-vehicle-data'
 import { uploadPhotos } from './routes/upload-photos'
 
 export async function registerRoutes(app: FastifyInstance) {
@@ -46,6 +47,7 @@ export async function registerRoutes(app: FastifyInstance) {
   app.register(registerVehicle)
   app.register(listVehicles)
   app.register(updateVehicle)
+  app.register(updateVehicleData)
   app.register(deleteVehicle)
   app.register(getParts)
   app.register(listEquipments)

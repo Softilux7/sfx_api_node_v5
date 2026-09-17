@@ -13,13 +13,14 @@ export const deleteVehicle: FastifyPluginAsyncZod = async app => {
         body: z.object({
           idBase: z.coerce.number(),
           placa: z.string(),
+          id: z.coerce.number().optional(),
         }),
       },
     },
     async request => {
-      const { idBase, placa } = request.body
+      const { idBase, placa, id } = request.body
 
-      const data = await deleteVehicleFn(idBase, placa)
+      const data = await deleteVehicleFn(idBase, placa, id)
 
       return { success: true, data, message: data.message }
     }

@@ -26,6 +26,17 @@ type RawEquipmentRow = {
   patrimonio: string | null
   departamento: string | null
   localinstal: string | null
+  // Endereço de instalação: fica na própria tabela `equipamentos` e é onde o técnico atende.
+  inst_endereco: string | null
+  inst_num: number | null
+  inst_complemento: string | null
+  inst_bairro: string | null
+  inst_cidade: string | null
+  inst_uf: string | null
+  inst_cep: string | null
+  inst_contato: string | null
+  inst_ddd: string | null
+  inst_fone: string | null
   cliente_id: number | null
   cliente_empresa_id: number | null
   cliente_nmcliente: string | null
@@ -35,6 +46,9 @@ type RawEquipmentRow = {
   cliente_fone1: string | null
   cliente_cidade: string | null
   cliente_complemento: string | null
+  cliente_num: number | null
+  cliente_uf: string | null
+  cliente_cep: string | null
   contrato_id: number | null
   contrato_id_base: number | null
   contrato_empresa_id: number | null
@@ -122,6 +136,16 @@ export async function listEquipmentsFn(filters: ListEquipmentsFilters) {
         e.PATRIMONIO AS patrimonio,
         e.DEPARTAMENTO AS departamento,
         e.LOCALINSTAL AS localinstal,
+        e.ENDERECO AS inst_endereco,
+        e.NUM AS inst_num,
+        e.COMPLEMENTO AS inst_complemento,
+        e.BAIRRO AS inst_bairro,
+        e.CIDADE AS inst_cidade,
+        e.UF AS inst_uf,
+        e.CEP AS inst_cep,
+        e.CONTATO AS inst_contato,
+        e.DDD AS inst_ddd,
+        e.FONE AS inst_fone,
         cli.id AS cliente_id,
         cli.empresa_id AS cliente_empresa_id,
         cli.NMCLIENTE AS cliente_nmcliente,
@@ -131,6 +155,9 @@ export async function listEquipmentsFn(filters: ListEquipmentsFilters) {
         cli.FONE1 AS cliente_fone1,
         cli.CIDADE AS cliente_cidade,
         cli.COMPLEMENTO AS cliente_complemento,
+        cli.NUM AS cliente_num,
+        cli.UF AS cliente_uf,
+        cli.CEP AS cliente_cep,
         ct.id AS contrato_id,
         ct.ID_BASE AS contrato_id_base,
         ct.empresa_id AS contrato_empresa_id,
@@ -157,6 +184,20 @@ export async function listEquipmentsFn(filters: ListEquipmentsFilters) {
     patrimonio: row.patrimonio ?? '',
     departamento: row.departamento ?? '',
     localinstal: row.localinstal ?? '',
+    // Endereço onde o equipamento está instalado. O app usa este como principal e só
+    // recorre ao do cliente quando o cadastro do equipamento está em branco.
+    instalacao: {
+      endereco: row.inst_endereco ?? '',
+      num: row.inst_num ?? 0,
+      complemento: row.inst_complemento ?? '',
+      bairro: row.inst_bairro ?? '',
+      cidade: row.inst_cidade ?? '',
+      uf: row.inst_uf ?? '',
+      cep: row.inst_cep ?? '',
+      contato: row.inst_contato ?? '',
+      ddd: row.inst_ddd ?? '',
+      fone: row.inst_fone ?? '',
+    },
     cliente:
       row.cliente_id !== null
         ? {
@@ -169,6 +210,9 @@ export async function listEquipmentsFn(filters: ListEquipmentsFilters) {
             fone1: row.cliente_fone1 ?? '',
             cidade: row.cliente_cidade ?? '',
             complemento: row.cliente_complemento ?? '',
+            num: row.cliente_num ?? 0,
+            uf: row.cliente_uf ?? '',
+            cep: row.cliente_cep ?? '',
           }
         : null,
     contrato:
