@@ -11,7 +11,7 @@ export const validateLicenseRoute: FastifyPluginAsyncZod = async app => {
         summary: 'Validar licença',
         description:
           'Valida o campo app_license do usuário em users e exige registro do dispositivo em app_subs. ' +
-          'Retorna 403 NOT_AUTHORIZED quando app_license = N ou quando não há registro para o device. ' +
+          'Retorna 403 com message NOT_AUTHORIZED quando app_license = N, ou DEVICE_NOT_REGISTERED quando não há registro para o device. ' +
           'Quando autorizado, atualiza o registro do dispositivo (versões e último acesso).',
         body: z.object({
           user_id: z.number().int(),

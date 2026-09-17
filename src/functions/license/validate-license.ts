@@ -43,7 +43,7 @@ export async function validateLicenseFn({
     `
 
     if (subs.length === 0) {
-      throw new AppError('NOT_AUTHORIZED', 403)
+      throw new AppError('DEVICE_NOT_REGISTERED', 403)
     }
 
     // Registra o acesso e atualiza as versões (mantém o valor atual quando não enviado).

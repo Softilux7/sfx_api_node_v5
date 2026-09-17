@@ -1,5 +1,4 @@
 import { loginFn } from '@/functions/auth/login'
-import { validateLicenseFn } from '@/functions/license/validate-license'
 import { createLicenseFn } from '@/functions/license/create-license'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
@@ -29,10 +28,7 @@ export const authRoute: FastifyPluginAsyncZod = async app => {
 
       const user = await loginFn({ email: user_email, passwordHash: password_hash })
 
-      // Valida app_license — lança 403 NOT_AUTHORIZED se estiver como N
-      await validateLicenseFn({ userId: user.id })
-
-      // Registra/atualiza a licença do dispositivo em app_subs
+      // Valida app_license (lança 403 NOT_AUTHORIZED se N) e registra/atualiza o device em app_subs
       await createLicenseFn({
         userId: user.id,
         deviceId: device_id,
