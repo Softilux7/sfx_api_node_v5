@@ -1,3 +1,4 @@
+import { DuplicatePlateError } from '@/functions/vehicles/duplicate-plate'
 import { registerVehicleFn } from '@/functions/vehicles/register-vehicle'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
@@ -9,10 +10,12 @@ export const registerVehicle: FastifyPluginAsyncZod = async app => {
       schema: {
         tags: ['vehicles'],
         summary: 'Registrar veículo',
-        description: 'Endpoint para cadastro de um novo veículo.',
+        description:
+          'Cadastra um veículo. `tecnicoId` nulo cria um veículo da empresa, ' +
+          'visível para todos os técnicos da base.',
         body: z.object({
           idBase: z.coerce.number(),
-          tecnicoId: z.string(),
+          tecnicoId: z.string().nullable().optional(),
           placa: z.string(),
           nomeVeiculo: z.string(),
           km: z.coerce.number(),
@@ -22,19 +25,26 @@ export const registerVehicle: FastifyPluginAsyncZod = async app => {
     async (request, reply) => {
       const { idBase, tecnicoId, placa, nomeVeiculo, km } = request.body
 
-      const data = await registerVehicleFn(
-        idBase,
-        tecnicoId,
-        nomeVeiculo,
-        placa,
-        km
-      )
+      try {
+        const data = await registerVehicleFn(
+          idBase,
+          tecnicoId ?? null,
+          nomeVeiculo,
+          placa,
+          km
+        )
 
-      return reply.status(201).send({
-        success: true,
-        data,
-        message: data.message,
-      })
+        return reply.status(201).send({
+          success: true,
+          data,
+          message: data.message,
+        })
+      } catch (error) {
+        if (error instanceof DuplicatePlateError) {
+          return reply.status(409).send({ success: false, message: error.message })
+        }
+        throw error
+      }
     }
   )
 }

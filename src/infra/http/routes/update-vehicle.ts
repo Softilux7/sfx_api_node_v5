@@ -10,18 +10,20 @@ export const updateVehicle: FastifyPluginAsyncZod = async app => {
         tags: ['vehicles'],
         summary: 'Atualizar quilometragem do veículo',
         description:
-          'Endpoint para atualização da quilometragem de um veículo.',
+          'Atualiza a quilometragem. Aceita `id` (preferencial) ou a placa — a placa ' +
+          'permanece porque a fila offline do app reenvia itens antigos, que não têm id.',
         body: z.object({
           idBase: z.coerce.number(),
           placa: z.string(),
           km: z.coerce.number(),
+          id: z.coerce.number().optional(),
         }),
       },
     },
     async request => {
-      const { idBase, placa, km } = request.body
+      const { idBase, placa, km, id } = request.body
 
-      const data = await updateVehicleFn(idBase, placa, km)
+      const data = await updateVehicleFn(idBase, placa, km, id)
 
       return { success: true, data, message: data.message }
     }
