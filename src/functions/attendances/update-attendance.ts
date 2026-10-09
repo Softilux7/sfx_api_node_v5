@@ -21,6 +21,7 @@ export async function updateAttendanceFn(
     LATITUDE?: number | undefined
     LONGITUDE?: number | undefined
     KMINICIAL?: number | undefined
+    PLACAVEICULO?: string | undefined
     VALESTACIONAMENTO?: number | undefined
     VALPEDAGIO?: number | undefined
     VALOUTRASDESP?: number | undefined
@@ -57,6 +58,32 @@ export async function updateAttendanceFn(
   }
 
   const create_at = dayjs().subtract(3, 'hour').toDate()
+
+  /**
+   * Campos extras do início da viagem de volta (progressos 23 e 24).
+   *
+   * Um atendimento aberto como "Sem deslocamento" — técnico já estava no local, vindo de
+   * outro chamado — nasce com KMINICIAL = 0 e DESLOCAMENTO_APP = 0. Se ele terminar com
+   * viagem de volta, o KM de partida informado nesse momento é o KM inicial do atendimento.
+   * Sem gravá-lo, o fechamento (caso 30) calcula VALKM com KMINICIAL = 0 e o técnico não
+   * recebe pelo trecho rodado na volta.
+   */
+  const returnTripFields = (): Prisma.Sql[] => {
+    const fields: Prisma.Sql[] = []
+
+    if (params.KMINICIAL !== undefined && params.KMINICIAL !== null) {
+      fields.push(Prisma.sql`KMINICIAL = ${params.KMINICIAL}`)
+    }
+    if (params.PLACAVEICULO) {
+      fields.push(Prisma.sql`PLACAVEICULO = ${params.PLACAVEICULO}`)
+    }
+    if (params.DESLOCAMENTO_APP !== undefined && params.DESLOCAMENTO_APP !== null) {
+      fields.push(Prisma.sql`DESLOCAMENTO_APP = ${params.DESLOCAMENTO_APP}`)
+    }
+
+    return fields
+  }
+
   // Verifica o progresso do atendimento
   switch (progress) {
     case 2: {
@@ -578,9 +605,14 @@ export async function updateAttendanceFn(
     case 23: {
       await prisma.$executeRaw`
             UPDATE atendimentos
-            SET
-                DESTINO_POS_ATENDIMENTO_APP = ${params.DESTINO_POS_ATENDIMENTO_APP},
-                ANDAMENTO_CHAMADO_APP = 23
+            SET ${Prisma.join(
+              [
+                Prisma.sql`DESTINO_POS_ATENDIMENTO_APP = ${params.DESTINO_POS_ATENDIMENTO_APP}`,
+                Prisma.sql`ANDAMENTO_CHAMADO_APP = 23`,
+                ...returnTripFields(),
+              ],
+              ', '
+            )}
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `
 
@@ -616,9 +648,14 @@ export async function updateAttendanceFn(
     case 24: {
       await prisma.$executeRaw`
             UPDATE atendimentos
-            SET
-                DESTINO_POS_ATENDIMENTO_APP = ${params.DESTINO_POS_ATENDIMENTO_APP},
-                ANDAMENTO_CHAMADO_APP = 24
+            SET ${Prisma.join(
+              [
+                Prisma.sql`DESTINO_POS_ATENDIMENTO_APP = ${params.DESTINO_POS_ATENDIMENTO_APP}`,
+                Prisma.sql`ANDAMENTO_CHAMADO_APP = 24`,
+                ...returnTripFields(),
+              ],
+              ', '
+            )}
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `
 

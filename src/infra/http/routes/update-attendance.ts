@@ -35,6 +35,11 @@ export const updateAtendimento: FastifyPluginAsyncZod = async app => {
             HRVIAGEMINI: z.string().optional(),
             HRVIAGEMFIN: z.string().optional(),
             DESLOCAMENTO_APP: z.number().optional(),
+            // KMINICIAL e PLACAVEICULO chegam quando um atendimento aberto sem
+            // deslocamento ganha viagem de volta: o KM de partida do retorno passa a ser o
+            // KM inicial. Sem declará-los aqui o zod os descartava em silêncio.
+            KMINICIAL: z.coerce.number().optional(),
+            PLACAVEICULO: z.string().optional(),
             KMFINAL: z.coerce.number().optional(),
             OBSERVACAO: z.string().optional(),
             FOLLOWUP: z.string().optional(),
