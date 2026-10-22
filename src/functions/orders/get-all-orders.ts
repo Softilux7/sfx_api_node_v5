@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { getCompaniesByTechnical } from '../companies/get-companies-by-technical'
-import { getLinkedPartsFn } from './get-linked-parts'
+import { getLinkedPartsBySeqosFn } from './get-linked-parts'
 
 export async function getAllOrdersFn(
   idTecnico: string,
@@ -16,15 +17,15 @@ export async function getAllOrdersFn(
 ) {
   const { seqos, portalId, serie, patrimonio, orderByRota } = options || {}
 
-  let orderClause = ''
+  let orderClause: Prisma.Sql
   if (status && status.trim() === 'O') {
-    orderClause = `
+    orderClause = Prisma.sql`
     ORDER BY
       COALESCE(c.DTFECHAMENTO, '1970-01-01 00:00:00') DESC,
       c.id DESC
   `
   } else if (orderByRota) {
-    orderClause = `
+    orderClause = Prisma.sql`
     ORDER BY
       CASE
         WHEN c.ROTA_INDEX = -1 THEN 9999
@@ -32,12 +33,40 @@ export async function getAllOrdersFn(
       END ASC
   `
   } else {
-    orderClause = 'ORDER BY previsao_atendimento ASC'
+    orderClause = Prisma.sql`ORDER BY previsao_atendimento ASC`
   }
 
   const empresas = await getCompaniesByTechnical(idTecnico, idBase)
 
-  let query = `
+  // Técnico sem empresa vinculada: `IN ()` era erro de SQL (500).
+  if (empresas.length === 0) return []
+
+  // Filtros como parâmetros: antes técnico, status, série e patrimônio eram concatenados no
+  // SQL ($queryRawUnsafe) e a rota é pública — SQL injection.
+  const filtros: Prisma.Sql[] = []
+
+  if (status && status.trim() !== 'N') {
+    filtros.push(Prisma.sql`AND c.STATUS = ${status}`)
+  }
+
+  if (seqos !== undefined) {
+    filtros.push(Prisma.sql`AND c.SEQOS = ${seqos}`)
+  }
+
+  if (portalId !== undefined) {
+    filtros.push(Prisma.sql`AND c.id = ${portalId}`)
+  }
+
+  if (serie && serie.trim() !== '') {
+    filtros.push(Prisma.sql`AND e.SERIE = ${serie}`)
+  }
+
+  if (patrimonio && patrimonio.trim() !== '') {
+    filtros.push(Prisma.sql`AND e.PATRIMONIO = ${patrimonio}`)
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  const chamados: any[] = await prisma.$queryRaw`
   SELECT DISTINCT
     c.id, c.SEQOS, c.CDEMPRESA, c.empresa_id,
     DATE_FORMAT(c.DTINCLUSAO, '%d/%m/%Y') AS DTINCLUSAO,
@@ -52,100 +81,71 @@ export async function getAllOrdersFn(
     t.NMOSTP,
     STR_TO_DATE(CONCAT(c.DTPREVENTREGA, ' ', c.HRPREVENTREGA), '%Y-%m-%d %H:%i:%s') AS previsao_atendimento,
     emp.empresa_fantasia, emp.empresa_nome, c.SEQCONTRATO,
-    cl.FANTASIA AS cliente_entrega_fantasia,
-    (
-      SELECT ci.CDPRODUTO
-      FROM chamados_itens ci
-      INNER JOIN produtos p ON p.ID_BASE = ci.ID_BASE AND p.CDPRODUTO = ci.CDPRODUTO
-      WHERE ci.ID_BASE = c.ID_BASE AND ci.SEQOS = c.SEQOS AND TFPENDENTE = 'S' AND TF_TROCA_KIT_TECNICO = 'N'
-      LIMIT 1
-    ) AS peca_vinculada
+    cl.FANTASIA AS cliente_entrega_fantasia
   FROM chamados c
   INNER JOIN equipamentos e ON c.CDEQUIPAMENTO = e.CDEQUIPAMENTO AND e.ID_BASE = c.ID_BASE AND e.empresa_id = c.empresa_id
   INNER JOIN defeitos d ON d.CDDEFEITO = c.CDDEFEITO AND d.ID_BASE = c.ID_BASE
   INNER JOIN chamado_tipos t ON t.CDOSTP = c.CDOSTP AND t.ID_BASE = c.ID_BASE
   INNER JOIN empresas emp ON emp.id = c.empresa_id
   LEFT JOIN clientes cl ON e.CDCLIENTEENT = cl.CDCLIENTE AND e.ID_BASE = cl.ID_BASE AND e.empresa_id = cl.empresa_id
-  WHERE c.NMSUPORTET = '${idTecnico}'
+  WHERE c.NMSUPORTET = ${idTecnico}
     AND c.TFLIBERADO = 'S'
     AND c.ID_BASE = ${idBase}
-    AND c.empresa_id IN (${empresas.join(',')})
-`
-
-  if (status && status.trim() !== 'N') {
-    query += ` AND c.STATUS = '${status}'`
-  }
-
-  if (seqos !== undefined) {
-    query += ` AND c.SEQOS = ${seqos}`
-  }
-
-  if (portalId !== undefined) {
-    query += ` AND c.id = ${portalId}`
-  }
-
-  if (serie && serie.trim() !== '') {
-    query += ` AND e.SERIE = '${serie}'`
-  }
-
-  if (patrimonio && patrimonio.trim() !== '') {
-    query += ` AND e.PATRIMONIO = '${patrimonio}'`
-  }
-
-  query += `
+    AND c.empresa_id IN (${Prisma.join(empresas)})
+    ${filtros.length > 0 ? Prisma.join(filtros, ' ') : Prisma.empty}
   ${orderClause}
   LIMIT 21
 `
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  const chamados: any[] = await prisma.$queryRawUnsafe(query)
-
-  const formattedData = await Promise.all(
-    chamados.map(async chamado => {
-      const partsData = await getLinkedPartsFn(chamado.ID_BASE, chamado.SEQOS)
-      return {
-        sequence: chamado.id,
-        seqos: chamado.SEQOS,
-        type: chamado.NMOSTP,
-        contact: chamado.CONTATO,
-        openDate: chamado.DTINCLUSAO || null,
-        hourOpen: chamado.HRINCLUSAO,
-        prevDate: chamado.PREVISAOATENDIMENTO,
-        closeDate: chamado.DTFECHAMENTO || null,
-        status: chamado.STATUS,
-        cdstatus: chamado.CDSTATUS,
-        cdempresa: chamado.empresa_id,
-        nmdefeito: chamado.NMDEFEITO,
-        company: chamado.empresa_nome,
-        companyFantasy: chamado.empresa_fantasia,
-        client: {
-          code: chamado.CDCLIENTE,
-          nmcliente: chamado.NMCLIENTE,
-          endereco: chamado.ENDERECO,
-          complemento: chamado.COMPLEMENTO,
-          bairro: chamado.BAIRRO,
-          cep: chamado.CEP,
-          uf: chamado.UF,
-          cidade: chamado.CIDADE,
-          num: chamado.NUM,
-          fone: chamado.telefone,
-          email: chamado.EMAIL,
-        },
-        equipment: {
-          code: chamado.CDEQUIPAMENTO?.toString() || null,
-          serial: chamado.SERIE || null,
-          patrimonio: chamado.PATRIMONIO || null,
-          local_instal: chamado.LOCALINSTAL || null,
-          departamento: chamado.DEPARTAMENTO || null,
-          model: chamado.MODELO || null,
-          obsdefectcli: chamado.OBSDEFEITOCLI || null,
-          obsdefectats: chamado.OBSDEFEITOATS || null,
-          cliente_entrega_fantasia: chamado.cliente_entrega_fantasia || null,
-        },
-        parts: partsData.parts,
-      }
-    })
+  // Uma consulta para as peças de todas as OS (antes: uma por OS).
+  const partsBySeqos = await getLinkedPartsBySeqosFn(
+    idBase,
+    chamados.map(chamado => Number(chamado.SEQOS))
   )
+
+  const formattedData = chamados.map(chamado => {
+    return {
+      sequence: chamado.id,
+      seqos: chamado.SEQOS,
+      type: chamado.NMOSTP,
+      contact: chamado.CONTATO,
+      openDate: chamado.DTINCLUSAO || null,
+      hourOpen: chamado.HRINCLUSAO,
+      prevDate: chamado.PREVISAOATENDIMENTO,
+      closeDate: chamado.DTFECHAMENTO || null,
+      status: chamado.STATUS,
+      cdstatus: chamado.CDSTATUS,
+      cdempresa: chamado.empresa_id,
+      nmdefeito: chamado.NMDEFEITO,
+      company: chamado.empresa_nome,
+      companyFantasy: chamado.empresa_fantasia,
+      client: {
+        code: chamado.CDCLIENTE,
+        nmcliente: chamado.NMCLIENTE,
+        endereco: chamado.ENDERECO,
+        complemento: chamado.COMPLEMENTO,
+        bairro: chamado.BAIRRO,
+        cep: chamado.CEP,
+        uf: chamado.UF,
+        cidade: chamado.CIDADE,
+        num: chamado.NUM,
+        fone: chamado.telefone,
+        email: chamado.EMAIL,
+      },
+      equipment: {
+        code: chamado.CDEQUIPAMENTO?.toString() || null,
+        serial: chamado.SERIE || null,
+        patrimonio: chamado.PATRIMONIO || null,
+        local_instal: chamado.LOCALINSTAL || null,
+        departamento: chamado.DEPARTAMENTO || null,
+        model: chamado.MODELO || null,
+        obsdefectcli: chamado.OBSDEFEITOCLI || null,
+        obsdefectats: chamado.OBSDEFEITOATS || null,
+        cliente_entrega_fantasia: chamado.cliente_entrega_fantasia || null,
+      },
+      parts: partsBySeqos.get(Number(chamado.SEQOS)) ?? [],
+    }
+  })
 
   return formattedData
 }

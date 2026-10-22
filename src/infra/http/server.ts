@@ -4,7 +4,7 @@ import fastifyJwt from '@fastify/jwt'
 import fastifyMultipart from '@fastify/multipart'
 import fastifySwagger from '@fastify/swagger'
 import scalarFastifyApiReference from '@scalar/fastify-api-reference'
-import fastify from 'fastify'
+import fastify, { type FastifyError } from 'fastify'
 import {
   jsonSchemaTransform,
   serializerCompiler,
@@ -15,7 +15,36 @@ import { registerRoutes } from '.'
 import { env } from './env'
 import { AppError } from './error'
 
-const app = fastify()
+// Log com data/hora ISO (antes só console.log, sem hora nem rota) e IP real do técnico
+// vindo do proxy do Apache. Requisição normal não é logada: ver o hook onResponse.
+const app = fastify({
+  logger: {
+    level: 'info',
+    timestamp: () => `,"time":"${new Date().toISOString()}"`,
+  },
+  disableRequestLogging: true,
+  trustProxy: true,
+})
+
+// Só o que interessa para suporte: respostas de erro e respostas lentas.
+const SLOW_RESPONSE_MS = 3000
+
+app.addHook('onResponse', (request, reply, done) => {
+  const ms = Math.round(reply.elapsedTime)
+  if (reply.statusCode >= 400 || ms >= SLOW_RESPONSE_MS) {
+    request.log.warn(
+      {
+        method: request.method,
+        url: request.url,
+        statusCode: reply.statusCode,
+        ms,
+        ip: request.ip,
+      },
+      'resposta'
+    )
+  }
+  done()
+})
 
 app.register(fastifyJwt, { secret: env.JWT_SECRET })
 
@@ -39,7 +68,8 @@ app.setValidatorCompiler(validatorCompiler)
 app.setSerializerCompiler(serializerCompiler)
 
 // Configurações Documentação
-if (env.NODE_ENV !== 'production') {
+// O ecosystem de produção usa NODE_ENV='prod': a documentação ficava exposta em produção.
+if (!['production', 'prod'].includes(env.NODE_ENV)) {
   app.register(fastifySwagger, {
     openapi: {
       info: {
@@ -64,11 +94,10 @@ if (env.NODE_ENV !== 'production') {
   })
 }
 
-app.setErrorHandler((error, _request, reply) => {
-  console.log(error)
-
+app.setErrorHandler((error: FastifyError, request, reply) => {
   // Erros esperados da aplicação
   if (error instanceof AppError) {
+    request.log.info({ statusCode: error.status }, error.message)
     return reply.status(error.status).send({
       message: error.message,
     })
@@ -76,15 +105,33 @@ app.setErrorHandler((error, _request, reply) => {
 
   // Erros de validação Zod (campos inválidos)
   if (hasZodFastifySchemaValidationErrors(error)) {
+    request.log.warn({ issues: error.validation }, 'validação recusada')
     return reply.status(400).send({
       message: 'Validation error.',
       issues: error.validation,
     })
   }
 
-  // Erro inesperado ()
+  // Erros do próprio Fastify e dos plugins com status 4xx (arquivo grande demais, corpo
+  // inválido...): antes viravam 500 genérico e o app ficava reenviando algo que nunca passa.
+  if (
+    typeof error.statusCode === 'number' &&
+    error.statusCode >= 400 &&
+    error.statusCode < 500
+  ) {
+    request.log.warn({ err: error }, error.message)
+    return reply.status(error.statusCode).send({
+      message: error.message,
+      code: error.code,
+    })
+  }
+
+  // Erro inesperado: continua 500 (o app tenta de novo), agora com código e id para o log.
+  request.log.error({ err: error }, 'erro inesperado')
   return reply.status(500).send({
     message: 'Internal server error.',
+    code: error.code,
+    reqId: request.id,
   })
 })
 
@@ -97,5 +144,5 @@ app.addHook('onClose', async () => {
 })
 
 app.listen({ port: env.PORT, host: '0.0.0.0' }).then(() => {
-  console.log(`Servidor rodando em http://localhost:${env.PORT}`)
+  app.log.info(`Servidor rodando em http://localhost:${env.PORT}`)
 })

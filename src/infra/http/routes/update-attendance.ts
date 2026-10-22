@@ -1,4 +1,5 @@
 import { updateAttendanceFn } from '@/functions/attendances/update-attendance'
+import { withIdempotency } from '@/infra/http/idempotency'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 
@@ -68,11 +69,11 @@ export const updateAtendimento: FastifyPluginAsyncZod = async app => {
     async request => {
       const { id, progress, ID_BASE, params } = request.body
 
-      const updatedAttendance = await updateAttendanceFn(
-        id,
-        ID_BASE,
-        progress,
-        params
+      // A fila manda a chave da etapa: o reenvio não reconcatena OBSDEFEITOATS nem a timeline.
+      const updatedAttendance = await withIdempotency(
+        request,
+        `atendimentos/update:${ID_BASE}`,
+        () => updateAttendanceFn(id, ID_BASE, progress, params)
       )
 
       return {
