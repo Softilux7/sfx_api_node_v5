@@ -4,12 +4,36 @@ import { Prisma } from '@prisma/client'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import { addTimeLine } from './add-timeline'
-import { calcularAtendimentoCaso30 } from './calc-attendance'
+import {
+  type CalculoCaso30,
+  calcularAtendimentoCaso30,
+} from './calc-attendance'
 
 // O caso 11 usa `dayjs.utc`. O plugin nunca foi registrado aqui: quem o registrava, por
 // tabela, era o SDK do Twilio (importado pela rota /send-sms). Sem a rota, a finalização na
 // assinatura passou a responder 500 ("dayjs.utc is not a function").
 dayjs.extend(utc)
+
+/**
+ * Atendimento fechado (30) ou cancelado (15) não volta de andamento. Uma etapa que falhou no
+ * app e chegou atrasada pela fila (ex.: o 11 depois do 30) sobrescrevia o fechamento e o
+ * atendimento voltava a aparecer em andamento. A condição fica no próprio UPDATE.
+ */
+const andamento = (progress: number) =>
+  Prisma.sql`ANDAMENTO_CHAMADO_APP = IF(ANDAMENTO_CHAMADO_APP IN (15, 30), ANDAMENTO_CHAMADO_APP, ${progress})`
+
+/** Campos de valores do fechamento; só entram valores finitos (NaN/undefined quebravam o SQL). */
+function camposDoCalculo(calculo: CalculoCaso30): Prisma.Sql[] {
+  if (!calculo.aplicado) return []
+  const campos = [Prisma.sql`TEMPOVIAGEM = ${calculo.TEMPOVIAGEM}`]
+  if (Number.isFinite(calculo.VALATENDIMENTO)) {
+    campos.push(Prisma.sql`VALATENDIMENTO = ${calculo.VALATENDIMENTO}`)
+  }
+  if (Number.isFinite(calculo.VALKM)) {
+    campos.push(Prisma.sql`VALKM = ${calculo.VALKM}`)
+  }
+  return campos
+}
 
 export type AttendancePart = {
   quantidade: number
@@ -118,7 +142,7 @@ export async function updateAttendanceFn(
     case 2: {
       await prisma.$executeRaw`
         UPDATE atendimentos
-        SET ANDAMENTO_CHAMADO_APP = 2, HRVIAGEMINI = ${params.HRVIAGEMINI}
+        SET ${andamento(2)}, HRVIAGEMINI = ${params.HRVIAGEMINI}
         WHERE id = ${id} AND ID_BASE = ${ID_BASE}`
 
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -152,7 +176,7 @@ export async function updateAttendanceFn(
     case 3: {
       await prisma.$executeRaw`
                 UPDATE atendimentos
-                SET ANDAMENTO_CHAMADO_APP = 3
+                SET ${andamento(3)}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
 
@@ -188,10 +212,10 @@ export async function updateAttendanceFn(
       await prisma.$executeRaw`
             UPDATE atendimentos
             SET
-                ANDAMENTO_CHAMADO_APP = 4,
+                ${andamento(4)},
                 DTVIAGEMFIN = ${params.DTVIAGEMFIN},
                 HRVIAGEMFIN = ${params.HRVIAGEMFIN},
-                KMFINAL = ${params.KMFINAL}
+                KMFINAL = IF(ANDAMENTO_CHAMADO_APP IN (15, 30), KMFINAL, ${params.KMFINAL})
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `
 
@@ -227,7 +251,7 @@ export async function updateAttendanceFn(
     case 5: {
       await prisma.$executeRaw`
                 UPDATE atendimentos
-                SET ANDAMENTO_CHAMADO_APP = 5
+                SET ${andamento(5)}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
 
@@ -262,7 +286,7 @@ export async function updateAttendanceFn(
     case 6: {
       await prisma.$executeRaw`
                 UPDATE atendimentos
-                SET ANDAMENTO_CHAMADO_APP = 6,
+                SET ${andamento(6)},
                     HRATENDIMENTO = ${params.HRATENDIMENTO}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
@@ -299,7 +323,7 @@ export async function updateAttendanceFn(
     case 7: {
       await prisma.$queryRaw`
                 UPDATE atendimentos
-                SET ANDAMENTO_CHAMADO_APP = 7
+                SET ${andamento(7)}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
 
@@ -335,7 +359,7 @@ export async function updateAttendanceFn(
     case 8: {
       await prisma.$executeRaw`
                 UPDATE atendimentos
-                SET ANDAMENTO_CHAMADO_APP = 8
+                SET ${andamento(8)}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
 
@@ -405,7 +429,7 @@ export async function updateAttendanceFn(
                 NOME_CONTATO = ${params.NOME_CONTATO},
                 CDMEDIDOR = ${params.CDMEDIDOR},
                 MEDIDOR = ${params.MEDIDOR},
-                ANDAMENTO_CHAMADO_APP = 10
+                ${andamento(10)}
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `
 
@@ -503,7 +527,7 @@ export async function updateAttendanceFn(
                 SET
                     HRATENDIMENTOFIN = ${params.HRATENDIMENTOFIN},
                     TEMPOATENDIMENTO = ${TEMPOATENDIMENTO},
-                    ANDAMENTO_CHAMADO_APP = 11
+                    ${andamento(11)}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
 
@@ -514,6 +538,21 @@ export async function updateAttendanceFn(
 
       if (!updatedAttendance || updatedAttendance.length === 0) {
         throw new AppError('Não foi possível atualizar o progresso [11]', 400)
+      }
+
+      // Chegou depois do fechamento: o valor foi calculado sem o tempo de atendimento.
+      // Refaz o cálculo com o tempo agora gravado (KM final já está no atendimento).
+      if (Number(updatedAttendance[0].ANDAMENTO_CHAMADO_APP) === 30) {
+        const campos = camposDoCalculo(
+          await calcularAtendimentoCaso30(id, ID_BASE)
+        )
+        if (campos.length > 0) {
+          await prisma.$executeRaw`
+            UPDATE atendimentos
+            SET ${Prisma.join(campos, ', ')}
+            WHERE ID_BASE = ${ID_BASE} AND id = ${id}
+          `
+        }
       }
 
       await addTimeLine({
@@ -581,23 +620,13 @@ export async function updateAttendanceFn(
         params.KMFINAL
       )
 
+      // Sem cálculo (terceirizado/técnico sem cadastro) os valores ficam no padrão da tabela.
       const campos: Prisma.Sql[] = [
         Prisma.sql`ANDAMENTO_CHAMADO_APP = 30`,
         Prisma.sql`ATUALIZADO = 1`,
         Prisma.sql`TFVISITA = 'S'`,
+        ...camposDoCalculo(calculo),
       ]
-
-      // Sem cálculo (terceirizado/técnico sem cadastro) os valores ficam no padrão da tabela.
-      // `Number.isFinite` impede que um NaN/undefined volte a quebrar o SQL.
-      if (calculo.aplicado) {
-        campos.push(Prisma.sql`TEMPOVIAGEM = ${calculo.TEMPOVIAGEM}`)
-        if (Number.isFinite(calculo.VALATENDIMENTO)) {
-          campos.push(Prisma.sql`VALATENDIMENTO = ${calculo.VALATENDIMENTO}`)
-        }
-        if (Number.isFinite(calculo.VALKM)) {
-          campos.push(Prisma.sql`VALKM = ${calculo.VALKM}`)
-        }
-      }
 
       if (
         params.KMFINAL !== undefined &&
@@ -660,7 +689,7 @@ export async function updateAttendanceFn(
             SET ${Prisma.join(
               [
                 Prisma.sql`DESTINO_POS_ATENDIMENTO_APP = ${params.DESTINO_POS_ATENDIMENTO_APP}`,
-                Prisma.sql`ANDAMENTO_CHAMADO_APP = 23`,
+                andamento(23),
                 ...returnTripFields(),
               ],
               ', '
@@ -703,7 +732,7 @@ export async function updateAttendanceFn(
             SET ${Prisma.join(
               [
                 Prisma.sql`DESTINO_POS_ATENDIMENTO_APP = ${params.DESTINO_POS_ATENDIMENTO_APP}`,
-                Prisma.sql`ANDAMENTO_CHAMADO_APP = 24`,
+                andamento(24),
                 ...returnTripFields(),
               ],
               ', '
