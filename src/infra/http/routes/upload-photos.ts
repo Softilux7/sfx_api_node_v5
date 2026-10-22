@@ -1,16 +1,26 @@
 import { randomUUID } from 'node:crypto'
-import * as fs from 'node:fs'
+import { mkdir, writeFile } from 'node:fs/promises'
 import * as path from 'node:path'
+import { withIdempotency } from '@/infra/http/idempotency'
 import { prisma } from '@/lib/prisma'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 
+// idBase e idAtendimento viram pasta em disco: só inteiros positivos. Antes qualquer texto
+// passava ("../", "undefined") e o arquivo ia parar fora da pasta do atendimento.
+const positiveIntString = z
+  .string()
+  .regex(/^\d{1,10}$/)
+  .refine(value => Number(value) > 0)
+
 const uploadSchema = z.object({
-  idAtendimento: z.string(),
-  idBase: z.string(),
-  empresa_id: z.string(),
+  idAtendimento: positiveIntString,
+  idBase: positiveIntString,
+  empresa_id: z.string().optional(),
   type: z.enum(['1', '2']),
 })
+
+const ROOT_PATH = '/var/www/html'
 
 export const uploadPhotos: FastifyPluginAsyncZod = async app => {
   app.post(
@@ -43,52 +53,65 @@ export const uploadPhotos: FastifyPluginAsyncZod = async app => {
 
       const parseResult = uploadSchema.safeParse(fields)
       if (!parseResult.success || !fileBuffer) {
-        return reply
-          .status(400)
-          .send({
-            success: false,
-            message: 'Parâmetros obrigatórios ausentes ou inválidos.',
-          })
+        request.log.warn(
+          { fields, hasFile: Boolean(fileBuffer) },
+          'upload recusado: parâmetros ausentes ou inválidos'
+        )
+        return reply.status(400).send({
+          success: false,
+          message: 'Parâmetros obrigatórios ausentes ou inválidos.',
+        })
       }
 
-      const { idAtendimento, idBase, type } = parseResult.data
-      const folder = type === '1' ? 'fotos' : 'assinatura'
-      const filename = type === '1' ? `${randomUUID()}.jpg` : 'assinatura.jpg'
+      const { idAtendimento, idBase, type, empresa_id } = parseResult.data
+      const file = fileBuffer
 
-      const rootPath = '/var/www/html'
-      const fullDirPath = path.join(
-        rootPath,
-        'files',
-        idBase,
-        idAtendimento,
-        folder
+      // empresa_id não vira caminho: valor inválido grava NULL como antes (Number → NaN → null).
+      const idEmpresa =
+        empresa_id && /^\d{1,10}$/.test(empresa_id) ? Number(empresa_id) : null
+
+      // A fila manda `itemId:índice` por foto: reenvio após timeout não duplica a foto.
+      const data = await withIdempotency(
+        request,
+        `upload:${idBase}`,
+        async () => {
+          const folder = type === '1' ? 'fotos' : 'assinatura'
+          const filename =
+            type === '1' ? `${randomUUID()}.jpg` : 'assinatura.jpg'
+
+          const fullDirPath = path.join(
+            ROOT_PATH,
+            'files',
+            idBase,
+            idAtendimento,
+            folder
+          )
+
+          await mkdir(fullDirPath, { recursive: true })
+          await writeFile(path.join(fullDirPath, filename), file)
+
+          await prisma.app_atendimento_photos.create({
+            data: {
+              ID_BASE: Number(idBase),
+              id_empresa: idEmpresa,
+              id_atendimento: Number(idAtendimento),
+              type: Number(type),
+              status: 1,
+              create_at: new Date(),
+              filename,
+              path: `/${idBase}/${idAtendimento}/${folder}/`,
+              description: null,
+            },
+          })
+
+          return {
+            path: `/files/${idBase}/${idAtendimento}/${folder}/${filename}`,
+            filename,
+          }
+        }
       )
-      const fullFilePath = path.join(fullDirPath, filename)
 
-      fs.mkdirSync(fullDirPath, { recursive: true })
-      fs.writeFileSync(fullFilePath, fileBuffer)
-
-      await prisma.app_atendimento_photos.create({
-        data: {
-          ID_BASE: Number(idBase),
-          id_empresa: Number(fields.empresa_id),
-          id_atendimento: Number(idAtendimento),
-          type: Number(type),
-          status: 1,
-          create_at: new Date(),
-          filename,
-          path: `/${idBase}/${idAtendimento}/${folder}/`,
-          description: null,
-        },
-      })
-
-      return reply.send({
-        success: true,
-        data: {
-          path: `/files/${idBase}/${idAtendimento}/${folder}/${filename}`,
-          filename,
-        },
-      })
+      return reply.send({ success: true, data })
     }
   )
 }

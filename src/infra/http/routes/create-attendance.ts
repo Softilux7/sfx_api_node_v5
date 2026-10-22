@@ -1,4 +1,5 @@
 import { createAttendaceFn } from '@/functions/attendances/create-attendance'
+import { withIdempotency } from '@/infra/http/idempotency'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 
@@ -32,7 +33,12 @@ export const createAtendimento: FastifyPluginAsyncZod = async app => {
       },
     },
     async request => {
-      const atendimento = await createAttendaceFn(request.body)
+      // Mesma chave (tempId) no create online e no reenvio da fila: não duplica o atendimento.
+      const atendimento = await withIdempotency(
+        request,
+        `atendimentos/add:${request.body.ID_BASE}`,
+        () => createAttendaceFn(request.body)
+      )
 
       return {
         success: true,
