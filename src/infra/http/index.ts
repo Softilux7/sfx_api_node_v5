@@ -19,7 +19,6 @@ import { listVehicles } from './routes/list-vehicles'
 import { registerExpoToken } from './routes/register-expo-token'
 import { registerVehicle } from './routes/register-vehicle'
 import { sendNotificationRoute } from './routes/send-notification'
-import { sendSMS } from './routes/send-sms'
 import { updateAtendimento } from './routes/update-attendance'
 import { updateVehicle } from './routes/update-vehicle'
 import { updateVehicleData } from './routes/update-vehicle-data'
@@ -37,7 +36,6 @@ export async function registerRoutes(app: FastifyInstance) {
   app.register(addAtendimentoMeters)
   app.register(getResumoChamados)
   app.register(listTypeCounters)
-  app.register(sendSMS)
   app.register(getAllEquipmentMeters)
   app.register(getStatus)
   app.register(uploadPhotos)
