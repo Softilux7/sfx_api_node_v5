@@ -2,8 +2,14 @@ import { AppError } from '@/infra/http/error'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
 import { addTimeLine } from './add-timeline'
 import { calcularAtendimentoCaso30 } from './calc-attendance'
+
+// O caso 11 usa `dayjs.utc`. O plugin nunca foi registrado aqui: quem o registrava, por
+// tabela, era o SDK do Twilio (importado pela rota /send-sms). Sem a rota, a finalização na
+// assinatura passou a responder 500 ("dayjs.utc is not a function").
+dayjs.extend(utc)
 
 export type AttendancePart = {
   quantidade: number
