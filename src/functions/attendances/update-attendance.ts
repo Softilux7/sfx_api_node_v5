@@ -2,8 +2,38 @@ import { AppError } from '@/infra/http/error'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
 import { addTimeLine } from './add-timeline'
-import { calcularAtendimentoCaso30 } from './calc-attendance'
+import {
+  type CalculoCaso30,
+  calcularAtendimentoCaso30,
+} from './calc-attendance'
+
+// O caso 11 usa `dayjs.utc`. O plugin nunca foi registrado aqui: quem o registrava, por
+// tabela, era o SDK do Twilio (importado pela rota /send-sms). Sem a rota, a finalização na
+// assinatura passou a responder 500 ("dayjs.utc is not a function").
+dayjs.extend(utc)
+
+/**
+ * Atendimento fechado (30) ou cancelado (15) não volta de andamento. Uma etapa que falhou no
+ * app e chegou atrasada pela fila (ex.: o 11 depois do 30) sobrescrevia o fechamento e o
+ * atendimento voltava a aparecer em andamento. A condição fica no próprio UPDATE.
+ */
+const andamento = (progress: number) =>
+  Prisma.sql`ANDAMENTO_CHAMADO_APP = IF(ANDAMENTO_CHAMADO_APP IN (15, 30), ANDAMENTO_CHAMADO_APP, ${progress})`
+
+/** Campos de valores do fechamento; só entram valores finitos (NaN/undefined quebravam o SQL). */
+function camposDoCalculo(calculo: CalculoCaso30): Prisma.Sql[] {
+  if (!calculo.aplicado) return []
+  const campos = [Prisma.sql`TEMPOVIAGEM = ${calculo.TEMPOVIAGEM}`]
+  if (Number.isFinite(calculo.VALATENDIMENTO)) {
+    campos.push(Prisma.sql`VALATENDIMENTO = ${calculo.VALATENDIMENTO}`)
+  }
+  if (Number.isFinite(calculo.VALKM)) {
+    campos.push(Prisma.sql`VALKM = ${calculo.VALKM}`)
+  }
+  return campos
+}
 
 export type AttendancePart = {
   quantidade: number
@@ -49,12 +79,32 @@ export async function updateAttendanceFn(
   }
 ) {
   // *Verifica se o atendimento existe*
+  // `select` explícito: DTMEDIDORDESC/DTVIAGEMINI/DTVIAGEMFIN nascem '0000-00-00' em linhas
+  // gravadas fora do app, e o Prisma não consegue ler a linha inteira nesses casos.
   const atendimento = await prisma.atendimentos.findUnique({
     where: { id },
+    select: { id: true, chamado_id: true, SEQOS: true },
   })
 
   if (!atendimento) {
     throw new AppError('Atendimento não encontrado.')
+  }
+
+  /**
+   * OS do atendimento. O vínculo é `chamado_id`: por (ID_BASE, SEQOS) o UPDATE atingia várias
+   * OS quando SEQOS = -1 (OS ainda sem número do ERP) ou repetido entre empresas da base.
+   * SEQOS só entra como reserva, para atendimento antigo sem `chamado_id`.
+   */
+  const chamadoWhere = (
+    seqos: number | null | undefined
+  ): Prisma.Sql | null => {
+    if (atendimento.chamado_id) {
+      return Prisma.sql`id = ${atendimento.chamado_id} AND ID_BASE = ${ID_BASE}`
+    }
+    if (seqos && seqos > 0) {
+      return Prisma.sql`ID_BASE = ${ID_BASE} AND SEQOS = ${seqos}`
+    }
+    return null
   }
 
   const create_at = dayjs().subtract(3, 'hour').toDate()
@@ -77,7 +127,10 @@ export async function updateAttendanceFn(
     if (params.PLACAVEICULO) {
       fields.push(Prisma.sql`PLACAVEICULO = ${params.PLACAVEICULO}`)
     }
-    if (params.DESLOCAMENTO_APP !== undefined && params.DESLOCAMENTO_APP !== null) {
+    if (
+      params.DESLOCAMENTO_APP !== undefined &&
+      params.DESLOCAMENTO_APP !== null
+    ) {
       fields.push(Prisma.sql`DESLOCAMENTO_APP = ${params.DESLOCAMENTO_APP}`)
     }
 
@@ -89,7 +142,7 @@ export async function updateAttendanceFn(
     case 2: {
       await prisma.$executeRaw`
         UPDATE atendimentos
-        SET ANDAMENTO_CHAMADO_APP = 2, HRVIAGEMINI = ${params.HRVIAGEMINI}
+        SET ${andamento(2)}, HRVIAGEMINI = ${params.HRVIAGEMINI}
         WHERE id = ${id} AND ID_BASE = ${ID_BASE}`
 
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -123,7 +176,7 @@ export async function updateAttendanceFn(
     case 3: {
       await prisma.$executeRaw`
                 UPDATE atendimentos
-                SET ANDAMENTO_CHAMADO_APP = 3
+                SET ${andamento(3)}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
 
@@ -159,10 +212,10 @@ export async function updateAttendanceFn(
       await prisma.$executeRaw`
             UPDATE atendimentos
             SET
-                ANDAMENTO_CHAMADO_APP = 4,
+                ${andamento(4)},
                 DTVIAGEMFIN = ${params.DTVIAGEMFIN},
                 HRVIAGEMFIN = ${params.HRVIAGEMFIN},
-                KMFINAL = ${params.KMFINAL}
+                KMFINAL = IF(ANDAMENTO_CHAMADO_APP IN (15, 30), KMFINAL, ${params.KMFINAL})
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `
 
@@ -198,7 +251,7 @@ export async function updateAttendanceFn(
     case 5: {
       await prisma.$executeRaw`
                 UPDATE atendimentos
-                SET ANDAMENTO_CHAMADO_APP = 5
+                SET ${andamento(5)}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
 
@@ -233,7 +286,7 @@ export async function updateAttendanceFn(
     case 6: {
       await prisma.$executeRaw`
                 UPDATE atendimentos
-                SET ANDAMENTO_CHAMADO_APP = 6,
+                SET ${andamento(6)},
                     HRATENDIMENTO = ${params.HRATENDIMENTO}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
@@ -270,7 +323,7 @@ export async function updateAttendanceFn(
     case 7: {
       await prisma.$queryRaw`
                 UPDATE atendimentos
-                SET ANDAMENTO_CHAMADO_APP = 7
+                SET ${andamento(7)}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
 
@@ -306,7 +359,7 @@ export async function updateAttendanceFn(
     case 8: {
       await prisma.$executeRaw`
                 UPDATE atendimentos
-                SET ANDAMENTO_CHAMADO_APP = 8
+                SET ${andamento(8)}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
 
@@ -376,15 +429,19 @@ export async function updateAttendanceFn(
                 NOME_CONTATO = ${params.NOME_CONTATO},
                 CDMEDIDOR = ${params.CDMEDIDOR},
                 MEDIDOR = ${params.MEDIDOR},
-                ANDAMENTO_CHAMADO_APP = 10
+                ${andamento(10)}
             WHERE id = ${id} AND ID_BASE = ${ID_BASE}
         `
 
+      const whereChamadoForm = chamadoWhere(params.SEQOS)
+
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      const currentChamado: any[] = await prisma.$queryRaw`
+      const currentChamado: any[] = whereChamadoForm
+        ? await prisma.$queryRaw`
             SELECT OBSDEFEITOATS FROM chamados
-            WHERE ID_BASE = ${ID_BASE} AND SEQOS = ${params.SEQOS}
+            WHERE ${whereChamadoForm}
         `
+        : []
 
       let obsDefeitoAts = params.FOLLOWUP || ''
       if (
@@ -395,14 +452,16 @@ export async function updateAttendanceFn(
         obsDefeitoAts = `${currentChamado[0].OBSDEFEITOATS} / ${params.FOLLOWUP || ''}`
       }
 
-      await prisma.$executeRaw`
+      if (whereChamadoForm) {
+        await prisma.$executeRaw`
             UPDATE chamados
             SET
                 OBSDEFEITOATS = ${obsDefeitoAts},
                 STATUS = ${params.STATUS},
                 CDSTATUS = ${params.CDSTATUS}
-            WHERE ID_BASE = ${ID_BASE} AND SEQOS = ${params.SEQOS}
+            WHERE ${whereChamadoForm}
         `
+      }
 
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       const updatedFormAttendance: any[] = await prisma.$queryRaw`
@@ -468,7 +527,7 @@ export async function updateAttendanceFn(
                 SET
                     HRATENDIMENTOFIN = ${params.HRATENDIMENTOFIN},
                     TEMPOATENDIMENTO = ${TEMPOATENDIMENTO},
-                    ANDAMENTO_CHAMADO_APP = 11
+                    ${andamento(11)}
                 WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
 
@@ -479,6 +538,21 @@ export async function updateAttendanceFn(
 
       if (!updatedAttendance || updatedAttendance.length === 0) {
         throw new AppError('Não foi possível atualizar o progresso [11]', 400)
+      }
+
+      // Chegou depois do fechamento: o valor foi calculado sem o tempo de atendimento.
+      // Refaz o cálculo com o tempo agora gravado (KM final já está no atendimento).
+      if (Number(updatedAttendance[0].ANDAMENTO_CHAMADO_APP) === 30) {
+        const campos = camposDoCalculo(
+          await calcularAtendimentoCaso30(id, ID_BASE)
+        )
+        if (campos.length > 0) {
+          await prisma.$executeRaw`
+            UPDATE atendimentos
+            SET ${Prisma.join(campos, ', ')}
+            WHERE ID_BASE = ${ID_BASE} AND id = ${id}
+          `
+        }
       }
 
       await addTimeLine({
@@ -518,89 +592,96 @@ export async function updateAttendanceFn(
                 SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
             `
 
-      await prisma.$executeRaw`
+      if (!cancelAttendance || cancelAttendance.length === 0) {
+        throw new AppError('Não foi possível atualizar o progresso [15]', 400)
+      }
+
+      const whereChamadoCancel = chamadoWhere(cancelAttendance[0].SEQOS)
+      if (whereChamadoCancel) {
+        await prisma.$executeRaw`
             UPDATE chamados
             SET
                 STATUS = ${params.STATUS},
                 CDSTATUS = ${params.CDSTATUS},
                 ATUALIZADO = 2
-            WHERE SEQOS = ${cancelAttendance[0].SEQOS} AND ID_BASE = ${cancelAttendance[0].ID_BASE}
+            WHERE ${whereChamadoCancel}
             `
-
-      if (!cancelAttendance || cancelAttendance.length === 0) {
-        throw new AppError('Não foi possível atualizar o progresso [15]', 400)
       }
 
       return cancelAttendance[0]
     }
 
-    case 30:
-      try {
-        const { TEMPOVIAGEM, VALATENDIMENTO, VALKM } =
-          await calcularAtendimentoCaso30(id, ID_BASE, params.KMFINAL)
+    case 30: {
+      // Sem try/catch: a falha agora vira 500 e o app tenta de novo. Antes o erro era engolido,
+      // a rota respondia 200 sem `updatedAttendance` e o atendimento ficava aberto.
+      const calculo = await calcularAtendimentoCaso30(
+        id,
+        ID_BASE,
+        params.KMFINAL
+      )
 
-        const camposUpdate = [
-          `TEMPOVIAGEM = '${TEMPOVIAGEM}'`,
-          `VALATENDIMENTO = ${VALATENDIMENTO}`,
-          `VALKM = ${VALKM}`,
-          // biome-ignore lint/style/noUnusedTemplateLiteral: <explanation>
-          `ANDAMENTO_CHAMADO_APP = 30`,
-          // biome-ignore lint/style/noUnusedTemplateLiteral: <explanation>
-          `ATUALIZADO = 1`,
-          `TFVISITA = 'S'`,
-        ]
+      // Sem cálculo (terceirizado/técnico sem cadastro) os valores ficam no padrão da tabela.
+      const campos: Prisma.Sql[] = [
+        Prisma.sql`ANDAMENTO_CHAMADO_APP = 30`,
+        Prisma.sql`ATUALIZADO = 1`,
+        Prisma.sql`TFVISITA = 'S'`,
+        ...camposDoCalculo(calculo),
+      ]
 
-        if (params.KMFINAL !== undefined && params.KMFINAL !== null) {
-          camposUpdate.push(`KMFINAL = ${params.KMFINAL}`)
-        }
+      if (
+        params.KMFINAL !== undefined &&
+        params.KMFINAL !== null &&
+        Number.isFinite(params.KMFINAL)
+      ) {
+        campos.push(Prisma.sql`KMFINAL = ${params.KMFINAL}`)
+      }
 
-        const updateQuery = `
+      await prisma.$executeRaw`
         UPDATE atendimentos
-        SET ${camposUpdate.join(', ')}
-        WHERE ID_BASE = ${ID_BASE} AND id = ${id};
+        SET ${Prisma.join(campos, ', ')}
+        WHERE ID_BASE = ${ID_BASE} AND id = ${id}
       `
 
-        await prisma.$executeRawUnsafe(updateQuery)
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-        const updatedAttendance: any[] = await prisma.$queryRaw`
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      const updatedAttendance: any[] = await prisma.$queryRaw`
                 SELECT * FROM atendimentos WHERE id = ${id} AND ID_BASE = ${ID_BASE}
                 `
 
-        if (!updatedAttendance || updatedAttendance.length === 0) {
-          throw new AppError('Não foi possível atualizar o progresso [30]', 400)
-        }
+      if (!updatedAttendance || updatedAttendance.length === 0) {
+        throw new AppError('Não foi possível atualizar o progresso [30]', 400)
+      }
 
+      const whereChamadoClose = chamadoWhere(updatedAttendance[0].SEQOS)
+      if (whereChamadoClose) {
         await prisma.$executeRaw`
             UPDATE chamados
             SET
                 ATUALIZADO = 2,
                 DTFECHAMENTO = ${create_at},
                 DTATENDIMENTO = ${updatedAttendance[0].DTATENDIMENTO}
-            WHERE ID_BASE = ${updatedAttendance[0].ID_BASE} AND SEQOS = ${updatedAttendance[0].SEQOS}
+            WHERE ${whereChamadoClose}
         `
-
-        await addTimeLine({
-          id_atendimento: id,
-          andamento_chamado_snapshot: '30',
-          tipo_time_line: '1',
-          address: '',
-          latitute: params.LATITUDE,
-          longitute: params.LONGITUDE,
-          location_captured: 1,
-          motivo: '',
-          motivo_outros: '',
-          id_tecnico: '',
-          id_transaction: params.ID_TRANSACTION,
-          ID_BASE: updatedAttendance[0].ID_BASE,
-          empresa_id: updatedAttendance[0].empresa_id,
-          create_at,
-        })
-
-        return updatedAttendance[0]
-      } catch (error) {
-        console.error('Erro ao calcular atendimento caso 30:', error)
       }
-      break
+
+      await addTimeLine({
+        id_atendimento: id,
+        andamento_chamado_snapshot: '30',
+        tipo_time_line: '1',
+        address: '',
+        latitute: params.LATITUDE,
+        longitute: params.LONGITUDE,
+        location_captured: 1,
+        motivo: '',
+        motivo_outros: '',
+        id_tecnico: '',
+        id_transaction: params.ID_TRANSACTION,
+        ID_BASE: updatedAttendance[0].ID_BASE,
+        empresa_id: updatedAttendance[0].empresa_id,
+        create_at,
+      })
+
+      return updatedAttendance[0]
+    }
 
     case 23: {
       await prisma.$executeRaw`
@@ -608,7 +689,7 @@ export async function updateAttendanceFn(
             SET ${Prisma.join(
               [
                 Prisma.sql`DESTINO_POS_ATENDIMENTO_APP = ${params.DESTINO_POS_ATENDIMENTO_APP}`,
-                Prisma.sql`ANDAMENTO_CHAMADO_APP = 23`,
+                andamento(23),
                 ...returnTripFields(),
               ],
               ', '
@@ -651,7 +732,7 @@ export async function updateAttendanceFn(
             SET ${Prisma.join(
               [
                 Prisma.sql`DESTINO_POS_ATENDIMENTO_APP = ${params.DESTINO_POS_ATENDIMENTO_APP}`,
-                Prisma.sql`ANDAMENTO_CHAMADO_APP = 24`,
+                andamento(24),
                 ...returnTripFields(),
               ],
               ', '

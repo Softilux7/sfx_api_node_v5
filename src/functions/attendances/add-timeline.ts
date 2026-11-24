@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { type Db, prisma } from '@/lib/prisma'
 
 export type TimeLineEntry = {
   id_transaction?: number
@@ -18,8 +18,8 @@ export type TimeLineEntry = {
   motivo_outros?: string | null
 }
 
-export async function addTimeLine(data: TimeLineEntry) {
-  await prisma.$executeRaw`
+export async function addTimeLine(data: TimeLineEntry, db: Db = prisma) {
+  await db.$executeRaw`
     INSERT INTO app_atendimento_timeline (
       andamento_chamado_snapshot,
       tipo_time_line,

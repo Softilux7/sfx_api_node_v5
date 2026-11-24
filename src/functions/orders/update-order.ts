@@ -1,5 +1,5 @@
 import { AppError } from '@/infra/http/error'
-import { prisma } from '@/lib/prisma'
+import { type Db, prisma } from '@/lib/prisma'
 
 export async function updateOrder(
   ID_BASE: number,
@@ -10,14 +10,19 @@ export async function updateOrder(
   ativo_app: number,
   followUp: string,
   dateTimeTransaction: string | null = null,
-  progress: number | null = null
+  progress: number | null = null,
+  db: Db = prisma
 ) {
-  const chamado = await prisma.chamados.findUnique({
+  // `select` explícito: chamados com DTATENDIMENTO = '0000-00-00' (gravados pelo PWS/ERP)
+  // derrubavam o Prisma ao ler a linha inteira ("day or month set to zero") e o create
+  // do atendimento respondia 500 depois de já ter inserido a linha.
+  const chamado = await db.chamados.findUnique({
     where: {
       id: chamado_id,
       ID_BASE,
       empresa_id,
     },
+    select: { SEQOS: true, ATUALIZADO_APP: true },
   })
 
   if (!chamado) {
@@ -66,13 +71,15 @@ export async function updateOrder(
     updatedData.ATUALIZADO = chamado.SEQOS > 0 ? '2' : '1'
   }
 
-  const updatedChamado = await prisma.chamados.update({
+  // O update também devolve a linha: sem `select`, o retorno relia DTATENDIMENTO.
+  const updatedChamado = await db.chamados.update({
     where: {
       id: chamado_id,
       ID_BASE,
       empresa_id,
     },
     data: updatedData,
+    select: { id: true },
   })
 
   return updatedChamado
